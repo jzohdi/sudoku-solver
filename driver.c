@@ -9,6 +9,7 @@ int main(void) {
     Board_Coordinates coords_mapping;
     Sudoku_Board start_board;
     Domains board_domains;
+    Arcs arc_rules;
     
     initialize_squares();
 
@@ -18,7 +19,7 @@ int main(void) {
     }
 
     initialize_domains(&start_board, &board_domains, &coords_mapping);
-    initialize_arcs();
+    initialize_arcs(&arc_rules);
     return VALID;
 }
 
@@ -195,9 +196,12 @@ void init_empty_board(Sudoku_Board *empty_board) {
     }
 }
 
-void initialize_arcs() {
-    int x = 0, y = 0;
+void initialize_arcs(Arcs *arc_rules) {
+    int x = 0, y = 0, hash, rule_index = 0;
     char *space = malloc(3 * sizeof(char));
+    char arc_char;
+    Arc_List *new_list = NULL;
+    char *new_value;
 
     for(;x < ROWS_LEN; x++){
         for(;y < COL_LEN; y++) {
@@ -207,6 +211,22 @@ void initialize_arcs() {
             space[1] = domains[y];
             space[2] = '\0';
 
+            hash = hash_code(space);
+
+            /* add all arc rules for being in the same row */
+            for(; rule_index < COL_LEN; rule_index++) {
+                arc_char = domains[rule_index];
+                
+                if (arc_rules != space[1]) {
+                    new_value = malloc(3 * sizeof(char));
+                    new_value[0] = space[0];
+                    new_value[1] = space[1];
+                    new_value[2] = '\0';
+
+                    new_list = append_arc_list(new_list, new_value);    
+                }
+            }
+            rule_index = 0;
             
         }
         y = 0;
