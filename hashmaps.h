@@ -15,6 +15,7 @@ typedef struct {
 } Domains;
 
 typedef struct {
+    int squares_row;
     int row;
     int col;
 } Coordinate;

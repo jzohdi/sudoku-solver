@@ -7,6 +7,7 @@
 #define ROWS_LEN 9
 #define COL_LEN 9
 #define DOMAIN_LEN 9
+#define SQUARE_NUM 9
 #define EMPTY_SPACE '0'
 
 /* Iterating over rows/domains (both char) give the board layout:
@@ -35,10 +36,11 @@ typedef struct board {
     char**rows;
 } Sudoku_Board;
 
-void load_row(char squares_row[][9], int inner_index, char *letters, char *nums);
-void initialize_squares();
+void load_row(char *squares_row[][9], int inner_index, char *letters, char *nums, Board_Coordinates *coords_mapping);
+void initialize_squares(Board_Coordinates *coords_mapping);
 void initialize_domains(Sudoku_Board *start_board, Domains *board_domains, Board_Coordinates *coords_mapping);
 void init_empty_board(Sudoku_Board *empty_board);
-void initialize_arcs();
+void initialize_arcs(Arcs *arc_rules, Board_Coordinates *coords_mapping);
+Arc_List *append_arc_list(Arc_List *new_list, char *value);
 
 #endif
