@@ -9,8 +9,9 @@ int main(void) {
     Board_Coordinates coords_mapping;
     Sudoku_Board start_board;
     Domains board_domains;
+    Arcs arc_rules;
     
-    initialize_squares();
+    initialize_squares(&coords_mapping);
 
     init_empty_board(&start_board);
     for (; input_index < ROWS_LEN; input_index++) {
@@ -18,7 +19,7 @@ int main(void) {
     }
 
     initialize_domains(&start_board, &board_domains, &coords_mapping);
-    initialize_arcs();
+    initialize_arcs(&arc_rules, &coords_mapping);
     return VALID;
 }
 
@@ -61,6 +62,18 @@ Node *linked_list_from_str(const char *str) {
     return head;
 }
 
+Arc_List *append_arc_list(Arc_List *prev_list, char *value) {
+    Arc_List *new_node = malloc(sizeof(Arc_List));
+    new_node -> value = value;
+    
+    if (prev_list == NULL) {
+        new_node -> next = NULL;
+        return new_node;
+    }
+    new_node -> next = prev_list;
+    return new_node;
+}
+
 void print_board(Sudoku_Board *board) {
     int x = 0, y = 0;
     for (; x < ROWS_LEN; x++) {
@@ -85,6 +98,16 @@ void print_domain_list(Node *head) {
     }
 }
 
+void print_arc_list(Arc_List *head) {
+    while( head != NULL ) {
+        printf("%s", head -> value);
+        if ( head -> next != NULL ) {
+            printf(", ");
+        }
+        head = head -> next;
+    }
+}
+
 /* ====================START INIT SECTION =============================*/
 /* ====================START INIT SECTION =============================*/
 /* ====================START INIT SECTION =============================*/
@@ -92,8 +115,9 @@ void print_domain_list(Node *head) {
 /* load row is used to add the tile symbols in the squares board. 
    after this function is done the squares variable contains, see SQUARES in driver.h 
    for what the result will look like.  */
-void load_row(char *squares_row[][9], int inner_index, char *letters, char *nums){
+void load_row(char *squares_row[][9], int inner_index, char *letters, char *nums, Board_Coordinates *coords_mapping){
     int squares_index = 0, letters_index = 0, nums_index = 0, hash;
+    Coordinate *coord;
     char *str;
 
     for(; letters_index < 3; letters_index++) {
@@ -104,6 +128,11 @@ void load_row(char *squares_row[][9], int inner_index, char *letters, char *nums
             str[1] = nums[nums_index];
             str[2] = '\0';
 
+            hash = hash_code(str);
+            coord = malloc(sizeof(Coordinate));
+            coord -> squares_row = inner_index;
+            coords_mapping -> coords[hash] = coord;
+            
             /* set the tile symbol for SQUARES */
             squares_row[0][squares_index] = str;
 
@@ -115,7 +144,7 @@ void load_row(char *squares_row[][9], int inner_index, char *letters, char *nums
 /* this function uses load row passing in the required combinations of
    strings used. this is used for the arc rule of 1-9 occuring once each in 
    each of the 9 sub squares in the sudoku board. */
-void initialize_squares(){
+void initialize_squares(Board_Coordinates *coords_mapping){
     char *letters[] = {"ABC", "DEF", "GHI"};
     char *nums[] = {"123", "456", "789"};
     int letters_index = 0, nums_index = 0, letters_len = 3, nums_len = 3,
@@ -127,7 +156,7 @@ void initialize_squares(){
         
         for(;nums_index < nums_len; nums_index++){
             current_num = nums[nums_index];
-            load_row(&SQUARES[squares_index], squares_index, current_letter, current_num);
+            load_row(&SQUARES[squares_index], squares_index, current_letter, current_num, coords_mapping);
             squares_index++;
         }
         nums_index = 0;
@@ -140,7 +169,6 @@ void initialize_squares(){
    This function also has the side effect of setting the coordinate hashmap values.
 */
 void initialize_domains(Sudoku_Board *start_board, Domains *board_domains, Board_Coordinates *coords_mapping){
-    Coordinate *coord;
     Node *domain_list;
     char start_value;
     int x = 0, y = 0, hash;
@@ -156,11 +184,8 @@ void initialize_domains(Sudoku_Board *start_board, Domains *board_domains, Board
 
             /* insert the tile into the board coordinates mapping */
             hash = hash_code(space);
-            coord = malloc(sizeof(Coordinate));
-            coord -> row = x;
-            coord -> col = y;
-            coords_mapping -> coords[hash] = coord;
-    
+            coords_mapping -> coords[hash] -> row = x;
+            coords_mapping -> coords[hash] -> row = x;
             start_value = start_board -> rows[x][y];
 
             if (start_value != '0') {
@@ -170,9 +195,7 @@ void initialize_domains(Sudoku_Board *start_board, Domains *board_domains, Board
             } else {
                 domain_list = linked_list_from_str(domains);
             }
-            printf("tile: %s domain: ", space);
-            print_domain_list(domain_list);
-            printf("\n");
+
             board_domains -> values[hash] = domain_list;
         }
         y = 0;
@@ -195,9 +218,20 @@ void init_empty_board(Sudoku_Board *empty_board) {
     }
 }
 
-void initialize_arcs() {
-    int x = 0, y = 0;
+/* arcs are the rules that apply to each tile for which other tiles cannot have the same
+   digit. The rules will be held in the Arcs arc_rules hashmap. 
+   for example arc rules for "E1":
+    "E2", "E3", "E4", "E5", "E6", "E7*, "E8", "E9", 
+    "A1", "B1", "C1", "D1", "F1", "G1", "H1", "I1",
+    "E9", "E8", "E7", "E6", "E5", "E4", "E3", "E2".
+    Meaning, if there is a 6 in the E1 tile, 6 cannot be in any of the listed tiles.
+*/
+void initialize_arcs(Arcs *arc_rules, Board_Coordinates *coords_mapping) {
+    int x = 0, y = 0, hash, rule_index = 0, squares_row;
     char *space = malloc(3 * sizeof(char));
+    char arc_char;
+    Arc_List *new_list;
+    char *new_value;
 
     for(;x < ROWS_LEN; x++){
         for(;y < COL_LEN; y++) {
@@ -207,7 +241,51 @@ void initialize_arcs() {
             space[1] = domains[y];
             space[2] = '\0';
 
+            hash = hash_code(space);
             
+            new_list = NULL;
+
+            /* add all arc rules for being in the same row */
+            for(; rule_index < COL_LEN; rule_index++) {
+                arc_char = domains[rule_index];
+                
+                if (arc_char != space[1]) {
+                    new_value = malloc(3 * sizeof(char));
+                    new_value[0] = space[0];
+                    new_value[1] = arc_char;
+                    new_value[2] = '\0';
+
+                    new_list = append_arc_list(new_list, new_value);    
+                }
+            }
+            rule_index = 0;
+
+            /* add all arc rule for being in the same column. */
+            for(; rule_index < ROWS_LEN; rule_index++) {
+                arc_char = ROWS[rule_index];
+
+                if (arc_char != space[0]) {
+                    new_value = malloc(3 * sizeof(char));
+                    new_value[0] = arc_char;
+                    new_value[1] = space[1];
+                    new_value[2] = '\0';
+
+                    new_list = append_arc_list(new_list, new_value);
+                }
+            } 
+            rule_index = 0;
+
+            /* add all rules for being in the same sub square. */
+            squares_row = coords_mapping -> coords[hash] -> squares_row;
+    
+            for(; rule_index < SQUARE_NUM; rule_index++) {
+                if(strcmp(SQUARES[squares_row][rule_index], space) != 0) {
+                    new_list = append_arc_list(new_list, SQUARES[squares_row][rule_index]);
+                }
+            }
+            rule_index = 0;
+
+            arc_rules -> values[hash] = new_list;            
         }
         y = 0;
     }    
@@ -215,12 +293,3 @@ void initialize_arcs() {
 /* ======================END INIT SECTION =============================*/
 /* ======================END INIT SECTION =============================*/
 /* ======================END INIT SECTION =============================*/
-
-    // for (; x < ROWS_LEN; x++) {
-    //     printf("|");
-    //     for (; y < COL_LEN; y++) {
-    //         printf("%c%c|", SQUARES[x][y][0], SQUARES[x][y][1]);
-    //     }
-    //     printf("\n");        
-    //     y = 0;
-    // }
