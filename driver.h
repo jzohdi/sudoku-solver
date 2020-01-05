@@ -42,5 +42,13 @@ void initialize_domains(Sudoku_Board *start_board, Domains *board_domains, Board
 void init_empty_board(Sudoku_Board *empty_board);
 void initialize_arcs(Arcs *arc_rules, Board_Coordinates *coords_mapping);
 Arc_List *append_arc_list(Arc_List *new_list, char *value);
+void AC3(Domains *board_domains, Arcs *arc_rules);
+int revise_domains(Domains *board_domains, char *tile1, char *tile2);
+Node * remove_value_from_domain_list(Node *list, char val);
+
+void print_arc_list(Arc_List *head);
+void print_domain_list(Node *head);
+void print_board(Sudoku_Board *board);
+void print_domains(Domains *board_domains);
 
 #endif
