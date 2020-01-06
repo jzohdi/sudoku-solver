@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "driver.h"
+#include "queue.h"
 
 int main(void) {
     int x = 0, y = 0;
@@ -20,8 +21,14 @@ int main(void) {
 
     initialize_domains(&start_board, &board_domains, &coords_mapping);
     initialize_arcs(&arc_rules, &coords_mapping);
+
+    AC3(&board_domains, &arc_rules);
+    print_domains(&board_domains);
     return VALID;
 }
+/*=======================================================================*/ 
+/*===================== START HELPER FUNCTIONS ==========================*/
+/*=======================================================================*/
 
 /* hash_code function is simply since only needing to account for keys
    A1...I9. */
@@ -87,6 +94,28 @@ void print_board(Sudoku_Board *board) {
     printf("\n");
 }
 
+void print_domains(Domains *board_domains) {
+    char *space = malloc(3 * sizeof(char));
+    int x = 0, y = 0, hash;
+
+    for(;x < ROWS_LEN; x++){
+        for(;y < COL_LEN; y++) {
+
+            space[0] = ROWS[x];
+            space[1] = domains[y];
+            space[2] = '\0';
+
+            /* insert the tile into the board coordinates mapping */
+            hash = hash_code(space);
+            printf("%s: ", space);
+            print_domain_list(board_domains -> values[hash]);
+            printf("\n");
+
+        }
+        y = 0;
+    }
+}
+
 void print_domain_list(Node *head) {
   
     while (head != NULL ) {
@@ -107,6 +136,10 @@ void print_arc_list(Arc_List *head) {
         head = head -> next;
     }
 }
+/*=======================================================================*/ 
+/*======================= END HELPER FUNCTIONS ==========================*/
+/*=======================================================================*/
+
 
 /* ====================START INIT SECTION =============================*/
 /* ====================START INIT SECTION =============================*/
@@ -290,6 +323,125 @@ void initialize_arcs(Arcs *arc_rules, Board_Coordinates *coords_mapping) {
         y = 0;
     }    
 }
+
 /* ======================END INIT SECTION =============================*/
 /* ======================END INIT SECTION =============================*/
 /* ======================END INIT SECTION =============================*/
+
+/*=======================================================================*/ 
+/*===================== START SOLVER FUNCTIONS ==========================*/
+/*=======================================================================*/
+
+void AC3(Domains *board_domains, Arcs *arc_rules) {
+    char *space, *arc_tile;
+    int x = 0, y = 0, hash;
+    Queue queue;
+    Arc_List *curr;
+    Tile_Pair *pair;
+
+    init_queue(&queue);
+
+    /* build queueue with every combination of pairs of arc rules. */
+    for(;x < ROWS_LEN; x++){
+        for(;y < COL_LEN; y++) {
+
+            /* build space string*/
+            space = malloc(3 * sizeof(char));
+            space[0] = ROWS[x];
+            space[1] = domains[y];
+            space[2] = '\0';
+
+            hash = hash_code(space);
+
+            curr = arc_rules -> values[hash];
+            
+            while (curr != NULL) {
+                arc_tile = curr -> value;
+
+                append_queue(&queue, space, arc_tile);
+
+                curr = curr -> next;
+            }
+        }
+        y = 0;
+    }
+
+    while(!queue_is_empty(&queue)) {
+
+        pair = shift_queue(&queue);
+
+        if (revise_domains(board_domains, pair -> values[0], pair -> values[1])) {
+            
+            hash = hash_code(pair -> values[0]);
+            curr = arc_rules -> values[hash];
+
+            while (curr != NULL) {
+                append_queue(&queue, curr -> value, pair -> values[0]);
+                curr = curr -> next;
+            }
+        }
+    
+    }
+
+}
+
+int revise_domains(Domains *board_domains, char *tile1, char *tile2) {
+    int revised = 0, possible = 0, hash1;
+    Node *head1, *curr1, *curr2;
+    
+    hash1 = hash_code(tile1);
+    head1 = curr1 = board_domains -> values[hash1];
+    
+    while(curr1 != NULL) {
+
+        possible = 0;
+        curr2 = board_domains -> values[hash_code(tile2)];
+        
+        while(curr2 != NULL) {
+            if (curr1 -> value != curr2 -> value) {
+                possible = 1;
+            } 
+            curr2 = curr2 -> next;
+        }
+        
+        if (!possible) {
+
+            board_domains -> values[hash1] = remove_value_from_domain_list(head1, curr1 -> value);
+            revised = 1;
+        }
+        
+        curr1 = curr1 -> next;
+    }
+
+    return revised;
+}
+
+/* remove the desired char from the Node linked list and return
+   the new list. */
+Node * remove_value_from_domain_list(Node *list, char val) {
+    Node *prev, *temp, *curr = list;
+    
+    if (curr -> value == val) {
+        list = list -> next;
+        curr -> next = NULL;
+        free(curr);
+        return list;
+    }
+
+    prev = curr;
+    while (curr != NULL) {
+
+        if (curr -> value == val) {
+            prev -> next = curr -> next;
+            free(curr);
+            return list;
+        }
+        prev = curr;
+        curr = curr -> next;
+    }
+
+    return list;
+}
+/*=======================================================================*/ 
+/*======================= END SOLVER FUNCTIONS ==========================*/
+/*=======================================================================*/
