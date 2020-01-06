@@ -5,3 +5,6 @@ driver.x: driver.c driver.h queue.c queue.h hashmaps.h
 
 test:
 	driver.x < test.txt
+	
+clean:
+	rm -rf driver.x
