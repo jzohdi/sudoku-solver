@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include "driver.h"
 #include "queue.h"
 
@@ -207,7 +206,7 @@ void initialize_arcs(Arcs *arc_rules, Squares_Row *sq_row) {
             squares_row = sq_row-> row[hash];
     
             for(; rule_index < SQUARE_NUM; rule_index++) {
-                if(strcmp(SQUARES[squares_row][rule_index], space) != 0) {
+                if(SQUARES[squares_row][rule_index][0] != space[0] || SQUARES[squares_row][rule_index][1] != space[1]) {
                     new_list = append_arc_list(new_list, SQUARES[squares_row][rule_index]);
                 }
             }
