@@ -334,7 +334,7 @@ Domains *backtracking_search(Domains *board_domains, Arcs *arc_rules) {
 
     while (curr_val != NULL) {
         new_domains = get_new_domains(board_domains, space_w_list -> space, curr_val -> value, arc_rules);
-  8
+
         if (new_domains != NULL) {
             result = backtracking_search(new_domains, arc_rules);
     
