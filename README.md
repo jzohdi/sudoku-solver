@@ -8,7 +8,7 @@ If this algorithm is not enough to complete the board, the rest will be complete
 
 Makefile
 
-> make clean
+> make clean\n
 > make all
 
 Manual
