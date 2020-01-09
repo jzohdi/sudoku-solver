@@ -14,18 +14,15 @@ typedef struct {
     Node *values[MAX_SIZE];
 } Domains;
 
-typedef struct {
-    int squares_row;
-    int row;
-    int col;
-} Coordinate;
 
-/* the board coordinates will hold a mapping
-of each square (A1, A2 ... I9) to its x,y coordinate
-on the sudoku board */
+/* the Squares_row will hold a mapping
+of each square (A1, A2 ... I9) row number to cache.
+This is done, since otherwise the last step of initialize_arcs
+would have to do an n^2 search for each tile in order to find the 
+correct location inside the SQUARES rule. */
 typedef struct {
-    Coordinate *coords[MAX_SIZE];
-} Board_Coordinates;
+    int row[MAX_SIZE];
+} Squares_Row;
 
 typedef struct arc_ele {
     char *value;

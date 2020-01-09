@@ -7,21 +7,21 @@
 int main(void) {
     int x = 0, y = 0;
     int input_index = 0;
-    Board_Coordinates coords_mapping;
+    Squares_Row sq_row;
     Sudoku_Board start_board;
     Domains board_domains;
     Domains *solved_domains;
     Arcs arc_rules;
     
-    initialize_squares(&coords_mapping);
+    initialize_squares(&sq_row);
 
     init_empty_board(&start_board);
     for (; input_index < ROWS_LEN; input_index++) {
         scanf("%s", start_board.rows[input_index]);
     }
 
-    initialize_domains(&start_board, &board_domains, &coords_mapping);
-    initialize_arcs(&arc_rules, &coords_mapping);
+    initialize_domains(&start_board, &board_domains, &sq_row);
+    initialize_arcs(&arc_rules, &sq_row);
 
     AC3(&board_domains, &arc_rules);
 
@@ -48,9 +48,8 @@ int main(void) {
 /* load row is used to add the tile symbols in the squares board. 
    after this function is done the squares variable contains, see SQUARES in driver.h 
    for what the result will look like.  */
-void load_row(char *squares_row[][9], int inner_index, char *letters, char *nums, Board_Coordinates *coords_mapping){
+void load_row(char *squares_row[][9], int inner_index, char *letters, char *nums, Squares_Row *sq_row){
     int squares_index = 0, letters_index = 0, nums_index = 0, hash;
-    Coordinate *coord;
     char *str;
 
     for(; letters_index < 3; letters_index++) {
@@ -62,9 +61,7 @@ void load_row(char *squares_row[][9], int inner_index, char *letters, char *nums
             str[2] = '\0';
 
             hash = hash_code(str);
-            coord = malloc(sizeof(Coordinate));
-            coord -> squares_row = inner_index;
-            coords_mapping -> coords[hash] = coord;
+            sq_row-> row[hash] = inner_index;
             
             /* set the tile symbol for SQUARES */
             squares_row[0][squares_index] = str;
@@ -77,7 +74,7 @@ void load_row(char *squares_row[][9], int inner_index, char *letters, char *nums
 /* this function uses load row passing in the required combinations of
    strings used. this is used for the arc rule of 1-9 occuring once each in 
    each of the 9 sub squares in the sudoku board. */
-void initialize_squares(Board_Coordinates *coords_mapping){
+void initialize_squares(Squares_Row *sq_row){
     char *letters[] = {"ABC", "DEF", "GHI"};
     char *nums[] = {"123", "456", "789"};
     int letters_index = 0, nums_index = 0, letters_len = 3, nums_len = 3,
@@ -89,7 +86,7 @@ void initialize_squares(Board_Coordinates *coords_mapping){
         
         for(;nums_index < nums_len; nums_index++){
             current_num = nums[nums_index];
-            load_row(&SQUARES[squares_index], squares_index, current_letter, current_num, coords_mapping);
+            load_row(&SQUARES[squares_index], squares_index, current_letter, current_num, sq_row);
             squares_index++;
         }
         nums_index = 0;
@@ -101,7 +98,7 @@ void initialize_squares(Board_Coordinates *coords_mapping){
    the value if the value is not empty. 
    This function also has the side effect of setting the coordinate hashmap values.
 */
-void initialize_domains(Sudoku_Board *start_board, Domains *board_domains, Board_Coordinates *coords_mapping){
+void initialize_domains(Sudoku_Board *start_board, Domains *board_domains, Squares_Row *sq_row){
     Node *domain_list;
     char start_value;
     int x = 0, y = 0, hash;
@@ -117,8 +114,6 @@ void initialize_domains(Sudoku_Board *start_board, Domains *board_domains, Board
 
             /* insert the tile into the board coordinates mapping */
             hash = hash_code(space);
-            coords_mapping -> coords[hash] -> row = x;
-            coords_mapping -> coords[hash] -> row = x;
             start_value = start_board -> rows[x][y];
 
             if (start_value != '0') {
@@ -159,7 +154,7 @@ void init_empty_board(Sudoku_Board *empty_board) {
     "E9", "E8", "E7", "E6", "E5", "E4", "E3", "E2".
     Meaning, if there is a 6 in the E1 tile, 6 cannot be in any of the listed tiles.
 */
-void initialize_arcs(Arcs *arc_rules, Board_Coordinates *coords_mapping) {
+void initialize_arcs(Arcs *arc_rules, Squares_Row *sq_row) {
     int x = 0, y = 0, hash, rule_index = 0, squares_row;
     char *space = malloc(3 * sizeof(char));
     char arc_char;
@@ -209,7 +204,7 @@ void initialize_arcs(Arcs *arc_rules, Board_Coordinates *coords_mapping) {
             rule_index = 0;
 
             /* add all rules for being in the same sub square. */
-            squares_row = coords_mapping -> coords[hash] -> squares_row;
+            squares_row = sq_row-> row[hash];
     
             for(; rule_index < SQUARE_NUM; rule_index++) {
                 if(strcmp(SQUARES[squares_row][rule_index], space) != 0) {
