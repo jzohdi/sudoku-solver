@@ -21,7 +21,14 @@ hashmaps.o: hashmaps.c hashmaps.h
 	$(CC) $(CFLAGS) -c hashmaps.c
 
 test:
-	driver.x < test.txt
+	driver.x < test01.input
+	driver.x < test02.input
+	driver.x < test03.input
+
+testdiff:
+	driver.x < test01.input | diff - test01.output
+	driver.x < test02.input | diff - test02.output
+	driver.x < test03.input | diff - test03.output
 	
 clean:
 	rm -rf driver.x *.o

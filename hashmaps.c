@@ -56,7 +56,6 @@ void print_solved_domains(Domains *board_domains, const char *rows, int row_len,
         printf("\n");
         y = 0;
     }
-    printf("\n");
 }
 
 void print_domain_list(Node *head) {
