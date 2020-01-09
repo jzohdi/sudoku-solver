@@ -4,6 +4,7 @@
 #define DRIVERH
 
 #define VALID 1
+#define INVALID 0
 #define ROWS_LEN 9
 #define COL_LEN 9
 #define DOMAIN_LEN 9
@@ -21,8 +22,8 @@
    |H1|H2|H3|H4|H5|H6|H7|H8|H9|
    |I1|I2|I3|I4|I5|I6|I7|I8|I9|  */
 const char ROWS[] = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', '\0'};
-const int COLUMNS[] = {1, 2, 3, 4, 5, 6, 7, 8, 9};
-const char domains[] = {'1', '2', '3', '4', '5', '6', '7', '8', '9', '\0'};
+// const int COLUMNS[] = {1, 2, 3, 4, 5, 6, 7, 8, 9};
+const char COLUMNS[] = {'1', '2', '3', '4', '5', '6', '7', '8', '9', '\0'};
 
 /* SQUARES will hold the tile symbol names the groups of tiles in each
    of the 9 sub-squares make an arc. the groups that can only hold a 
@@ -43,12 +44,9 @@ void init_empty_board(Sudoku_Board *empty_board);
 void initialize_arcs(Arcs *arc_rules, Board_Coordinates *coords_mapping);
 Arc_List *append_arc_list(Arc_List *new_list, char *value);
 void AC3(Domains *board_domains, Arcs *arc_rules);
-int revise_domains(Domains *board_domains, char *tile1, char *tile2);
-Node * remove_value_from_domain_list(Node *list, char val);
+Domains *backtracking_search(Domains *board_domains, Arcs *arc_rules);
 
-void print_arc_list(Arc_List *head);
-void print_domain_list(Node *head);
-void print_board(Sudoku_Board *board);
-void print_domains(Domains *board_domains);
+Domains *get_new_domains(Domains *board_domains, char *space, char new_val, Arcs *arc_rules);
+int revise_domains(Domains *board_domains, char *tile1, char *tile2);
 
 #endif

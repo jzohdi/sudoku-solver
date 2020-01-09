@@ -35,7 +35,6 @@ int append_queue(Queue *queue, char *v1, char *v2) {
         queue -> head = new_pair;
         return 1;
     }
-
     new_pair -> prev = queue -> tail;
     queue -> tail -> next = new_pair;
     queue -> tail = new_pair;

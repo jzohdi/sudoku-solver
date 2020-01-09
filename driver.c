@@ -10,6 +10,7 @@ int main(void) {
     Board_Coordinates coords_mapping;
     Sudoku_Board start_board;
     Domains board_domains;
+    Domains *solved_domains;
     Arcs arc_rules;
     
     initialize_squares(&coords_mapping);
@@ -23,123 +24,22 @@ int main(void) {
     initialize_arcs(&arc_rules, &coords_mapping);
 
     AC3(&board_domains, &arc_rules);
-    print_domains(&board_domains);
-    return VALID;
-}
-/*=======================================================================*/ 
-/*===================== START HELPER FUNCTIONS ==========================*/
-/*=======================================================================*/
 
-/* hash_code function is simply since only needing to account for keys
-   A1...I9. */
-unsigned int hash_code(char *str) {
-    unsigned int c = (int) str[0] - 64;
-  
-    c += (c * str[1]);
-    return c - 50;
-}
-/* Given a tile name (A1...I9) ad desired new value for the board,
-   this function uses the coordinate mapping to retrieve the appropiate board (x, y) values
-   to set the new value in to. */
-void set_tile_value(Board_Coordinates *coord_mapping, char *tile, Sudoku_Board *board, char *new_value) {
-    Coordinate *coords;
-    int hash;
-
-    hash = hash_code(tile);
-    coords = coord_mapping -> coords[hash];
-    board -> rows[coords -> row][coords -> col] = *new_value;
-}
-
-/* takes a string and creates a Linked List */
-Node *linked_list_from_str(const char *str) {
-    int index = 1;
-    Node *curr, *prev, *head = malloc(sizeof(Node));
-    head -> value = str[0];
-    head -> next = NULL;
-    prev = head;
-
-    while( str[index] != '\0' ) {
-        curr = malloc(sizeof(Node));
-        curr -> value = str[index];
-        curr -> next = NULL;
-        prev -> next = curr;
-        prev = prev -> next;
-        index++;
+    if (board_is_solved(&board_domains, ROWS, ROWS_LEN, COLUMNS, COL_LEN)) {
+        printf("solved with AC3 algorithm:\n");
+        print_solved_domains(&board_domains, ROWS, ROWS_LEN, COLUMNS, COL_LEN);
+        return VALID;
     }
-    return head;
-}
 
-Arc_List *append_arc_list(Arc_List *prev_list, char *value) {
-    Arc_List *new_node = malloc(sizeof(Arc_List));
-    new_node -> value = value;
-    
-    if (prev_list == NULL) {
-        new_node -> next = NULL;
-        return new_node;
+    solved_domains = backtracking_search(&board_domains, &arc_rules);
+    if (solved_domains != NULL) {
+        printf("solved with Back Tracking Search:\n");
+        print_solved_domains(solved_domains, ROWS, ROWS_LEN, COLUMNS, COL_LEN);
+        return VALID;
     }
-    new_node -> next = prev_list;
-    return new_node;
+    printf("Board given is not valid.\n");
+    return INVALID;
 }
-
-void print_board(Sudoku_Board *board) {
-    int x = 0, y = 0;
-    for (; x < ROWS_LEN; x++) {
-        printf("|");
-        for (; y < COL_LEN; y++) {
-            printf("%c|", board -> rows[x][y]);
-        }
-        printf("\n");        
-        y = 0;
-    }
-    printf("\n");
-}
-
-void print_domains(Domains *board_domains) {
-    char *space = malloc(3 * sizeof(char));
-    int x = 0, y = 0, hash;
-
-    for(;x < ROWS_LEN; x++){
-        for(;y < COL_LEN; y++) {
-
-            space[0] = ROWS[x];
-            space[1] = domains[y];
-            space[2] = '\0';
-
-            /* insert the tile into the board coordinates mapping */
-            hash = hash_code(space);
-            printf("%s: ", space);
-            print_domain_list(board_domains -> values[hash]);
-            printf("\n");
-
-        }
-        y = 0;
-    }
-}
-
-void print_domain_list(Node *head) {
-  
-    while (head != NULL ) {
-        printf("%c", head -> value);
-        if ( head -> next != NULL ) {
-            printf(", ");
-        }
-        head = head -> next;
-    }
-}
-
-void print_arc_list(Arc_List *head) {
-    while( head != NULL ) {
-        printf("%s", head -> value);
-        if ( head -> next != NULL ) {
-            printf(", ");
-        }
-        head = head -> next;
-    }
-}
-/*=======================================================================*/ 
-/*======================= END HELPER FUNCTIONS ==========================*/
-/*=======================================================================*/
-
 
 /* ====================START INIT SECTION =============================*/
 /* ====================START INIT SECTION =============================*/
@@ -212,7 +112,7 @@ void initialize_domains(Sudoku_Board *start_board, Domains *board_domains, Board
 
             /* build space string*/
             space[0] = ROWS[x];
-            space[1] = domains[y];
+            space[1] = COLUMNS[y];
             space[2] = '\0';
 
             /* insert the tile into the board coordinates mapping */
@@ -226,7 +126,7 @@ void initialize_domains(Sudoku_Board *start_board, Domains *board_domains, Board
                 domain_list -> value = start_value;
                 domain_list -> next = NULL;
             } else {
-                domain_list = linked_list_from_str(domains);
+                domain_list = linked_list_from_str(COLUMNS);
             }
 
             board_domains -> values[hash] = domain_list;
@@ -271,7 +171,7 @@ void initialize_arcs(Arcs *arc_rules, Board_Coordinates *coords_mapping) {
             
             /* build space string*/
             space[0] = ROWS[x];
-            space[1] = domains[y];
+            space[1] = COLUMNS[y];
             space[2] = '\0';
 
             hash = hash_code(space);
@@ -280,7 +180,7 @@ void initialize_arcs(Arcs *arc_rules, Board_Coordinates *coords_mapping) {
 
             /* add all arc rules for being in the same row */
             for(; rule_index < COL_LEN; rule_index++) {
-                arc_char = domains[rule_index];
+                arc_char = COLUMNS[rule_index];
                 
                 if (arc_char != space[1]) {
                     new_value = malloc(3 * sizeof(char));
@@ -348,7 +248,7 @@ void AC3(Domains *board_domains, Arcs *arc_rules) {
             /* build space string*/
             space = malloc(3 * sizeof(char));
             space[0] = ROWS[x];
-            space[1] = domains[y];
+            space[1] = COLUMNS[y];
             space[2] = '\0';
 
             hash = hash_code(space);
@@ -416,31 +316,70 @@ int revise_domains(Domains *board_domains, char *tile1, char *tile2) {
     return revised;
 }
 
-/* remove the desired char from the Node linked list and return
-   the new list. */
-Node * remove_value_from_domain_list(Node *list, char val) {
-    Node *prev, *temp, *curr = list;
+Domains *backtracking_search(Domains *board_domains, Arcs *arc_rules) {
+    Domains *new_domains, *result;
+    Space_List_Pair *space_w_list;
+    Node *curr_val;
+    char **unsolved_keys;
+    int index = 0;
+    char *curr;
+    if (board_is_solved(board_domains, ROWS, ROWS_LEN, COLUMNS, COL_LEN)) {
+        return board_domains;
+    }
+
+    unsolved_keys = get_unsolved_domain_keys(board_domains, ROWS, ROWS_LEN, COLUMNS, COL_LEN);
+
+    space_w_list = get_min_list(board_domains, unsolved_keys);
+    curr_val = space_w_list -> domain_list;
+
+    while (curr_val != NULL) {
+        new_domains = get_new_domains(board_domains, space_w_list -> space, curr_val -> value, arc_rules);
+  8
+        if (new_domains != NULL) {
+            result = backtracking_search(new_domains, arc_rules);
     
-    if (curr -> value == val) {
-        list = list -> next;
-        curr -> next = NULL;
-        free(curr);
-        return list;
-    }
-
-    prev = curr;
-    while (curr != NULL) {
-
-        if (curr -> value == val) {
-            prev -> next = curr -> next;
-            free(curr);
-            return list;
+            if (result != NULL) {
+                return result;
+            }
         }
-        prev = curr;
-        curr = curr -> next;
+        curr_val = curr_val -> next;
+    }
+    return NULL;
+}
+
+Domains *get_new_domains(Domains *board_domains, char *space, char new_value, Arcs *arc_rules) {
+    int x = 0, y = 0, hash;
+    char *domain_key = malloc(3 * sizeof(char));
+    Domains *new_domains = malloc(sizeof(Domains));
+    Node *new_list_for_space = malloc(sizeof(Node));
+    
+    new_list_for_space -> value = new_value;
+    new_list_for_space -> next = NULL;
+
+    for(; x < ROWS_LEN; x++) {
+        for(; y < COL_LEN; y++) {
+            domain_key[0] = ROWS[x];
+            domain_key[1] = COLUMNS[y];
+            domain_key[2] = '\0';
+
+            hash = hash_code(domain_key);
+
+            if (domain_key[0] == space[0] && domain_key[1] == space[1]) {
+                new_domains -> values[hash] = new_list_for_space;
+            } else {
+                new_domains -> values[hash] = deep_copy_list(board_domains -> values[hash]);
+            }
+
+        }
+        y = 0;
     }
 
-    return list;
+    AC3(new_domains, arc_rules);
+    
+    if (is_consistent(new_domains, ROWS, ROWS_LEN, COLUMNS, COL_LEN)) {
+        return new_domains;
+    }
+    return NULL;
 }
 /*=======================================================================*/ 
 /*======================= END SOLVER FUNCTIONS ==========================*/
