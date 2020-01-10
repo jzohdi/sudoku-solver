@@ -3,7 +3,12 @@
 #include "driver.h"
 #include "queue.h"
 
-int main(void) {
+int main(int argc, char *argv[]) {
+    /*=command line args=*/
+    Command_Line_Args args;
+    args.ac3_only = 0;
+    /* ================= */
+    
     int x = 0, y = 0;
     int input_index = 0;
     Squares_Row sq_row;
@@ -12,9 +17,15 @@ int main(void) {
     Domains *solved_domains;
     Arcs arc_rules;
     
-    initialize_squares(&sq_row);
+    /*=== set command line args ===*/
+    if (argc > 1){
+        set_args(&args, argv, argc);
+    }
+    /*=============================*/
 
+    initialize_squares(&sq_row);
     init_empty_board(&start_board);
+
     for (; input_index < ROWS_LEN; input_index++) {
         scanf("%s", start_board.rows[input_index]);
     }
@@ -25,10 +36,16 @@ int main(void) {
     AC3(&board_domains, &arc_rules);
 
     if (board_is_solved(&board_domains, ROWS, ROWS_LEN, COLUMNS, COL_LEN)) {
-        printf("solved with AC3 algorithm:\n");
+        printf("Solved with AC3 algorithm:\n");
         print_solved_domains(&board_domains, ROWS, ROWS_LEN, COLUMNS, COL_LEN);
         return VALID;
+
+    } else if (args.ac3_only) {
+        printf("Board progress using only AC3:\n");
+        print_unsolved_domains(&board_domains, ROWS, ROWS_LEN, COLUMNS, COL_LEN);
+        return VALID;
     }
+
 
     solved_domains = backtracking_search(&board_domains, &arc_rules);
     if (solved_domains != NULL) {
@@ -43,6 +60,31 @@ int main(void) {
 /* ====================START INIT SECTION =============================*/
 /* ====================START INIT SECTION =============================*/
 /* ====================START INIT SECTION =============================*/
+int str_equal(char s1[], char s2[]) {
+    int i = 0;
+    for (; ; i++)
+    {
+        if (s1[i] != s2[i])
+        {
+            return 0;
+        }
+
+        if (s1[i] == '\0')
+        {
+            return 1;
+        }
+    }
+}
+
+void set_args(Command_Line_Args *args, char *argv[], int argc) {
+    int index = 1;
+    
+    for (; index < argc; index++) {
+        if (str_equal(argv[index], "ac3\0")) {
+            args -> ac3_only = 1;
+        }
+    }
+}
 
 /* load row is used to add the tile symbols in the squares board. 
    after this function is done the squares variable contains, see SQUARES in driver.h 
@@ -138,7 +180,7 @@ void init_empty_board(Sudoku_Board *empty_board) {
     for (; index < ROWS_LEN; index++) {
         empty_board -> rows[index] = malloc((1 + COL_LEN) * sizeof(char));
         for (; col_index < COL_LEN; col_index++) {
-            empty_board -> rows[index][col_index] = EMPTY_SPACE;
+            empty_board -> rows[index][col_index] = '\0';
         }
         empty_board -> rows[index][col_index] = '\0';
         col_index = 0;
@@ -222,10 +264,8 @@ void initialize_arcs(Arcs *arc_rules, Squares_Row *sq_row) {
 /* ======================END INIT SECTION =============================*/
 /* ======================END INIT SECTION =============================*/
 
-/*=======================================================================*/ 
-/*===================== START SOLVER FUNCTIONS ==========================*/
-/*=======================================================================*/
-
+/* AC-3 is a constraint satisfaction problem (CSP) algorithim where taking in sets of rules
+   about the problem, fills in the board by a process of elimination. */
 void AC3(Domains *board_domains, Arcs *arc_rules) {
     char *space, *arc_tile;
     int x = 0, y = 0, hash;
@@ -235,7 +275,7 @@ void AC3(Domains *board_domains, Arcs *arc_rules) {
 
     init_queue(&queue);
 
-    /* build queueue with every combination of pairs of arc rules. */
+    /* build queueue with every combination of pairs between a tile and its arc rules. */
     for(;x < ROWS_LEN; x++){
         for(;y < COL_LEN; y++) {
 
@@ -260,6 +300,8 @@ void AC3(Domains *board_domains, Arcs *arc_rules) {
         y = 0;
     }
 
+    /* grab a pair out of the queue. if we can revise the board using this pair, then need to add the pair 
+       as well as all the pairs made from the first value and its arc rules back into the queue. */
     while(!queue_is_empty(&queue)) {
 
         pair = shift_queue(&queue);
@@ -279,6 +321,10 @@ void AC3(Domains *board_domains, Arcs *arc_rules) {
 
 }
 
+/* revising the domain for the tiles consists of checking the domains of the the 
+   two tiles are open domains. To do so, iterate over the domain of the first tile (ex: 1, 2, 3, ...),
+   then check that there is a value in the tile2 domain that is not the current value. For example:
+   if the only value in the tile2 domain is 2, then we must remove this value from tile1's domain. */
 int revise_domains(Domains *board_domains, char *tile1, char *tile2) {
     int revised = 0, possible = 0, hash1;
     Node *head1, *curr1, *curr2;
@@ -310,6 +356,11 @@ int revise_domains(Domains *board_domains, char *tile1, char *tile2) {
     return revised;
 }
 
+/* backtracking search algorithim is a type of depth first search that files in a new copy
+   of the domain with an "assumed solved tile". If there are certain tiles that are not solved yet,
+   then we assumed one of the domain values for this tile, then keep repeating this process until
+   either solving the board or hitting an inconsistency. If getting to a dead end, the algorithm 
+   "backtracks" and for the last assumed tile, we now assume another value from the domain instead. */
 Domains *backtracking_search(Domains *board_domains, Arcs *arc_rules) {
     Domains *new_domains, *result;
     Space_List_Pair *space_w_list;
@@ -317,18 +368,24 @@ Domains *backtracking_search(Domains *board_domains, Arcs *arc_rules) {
     char **unsolved_keys;
     int index = 0;
     char *curr;
+
+    /* if the board is solved return this board. */
     if (board_is_solved(board_domains, ROWS, ROWS_LEN, COLUMNS, COL_LEN)) {
         return board_domains;
     }
 
+    /* get the list of keys (tiles) from the board that are still unsolved. */
     unsolved_keys = get_unsolved_domain_keys(board_domains, ROWS, ROWS_LEN, COLUMNS, COL_LEN);
 
+    /* choose a tile to assume the value for (start with tiles with the smallest possible options). */
     space_w_list = get_min_list(board_domains, unsolved_keys);
     curr_val = space_w_list -> domain_list;
 
+    /* for each of the values in the selected tile's domain, get a new domain for the board and continue to BTS. */
     while (curr_val != NULL) {
         new_domains = get_new_domains(board_domains, space_w_list -> space, curr_val -> value, arc_rules);
-
+        
+        /* we only get to this point if the board is solved or hit a dead end (NULL). */
         if (new_domains != NULL) {
             result = backtracking_search(new_domains, arc_rules);
     
@@ -341,6 +398,8 @@ Domains *backtracking_search(Domains *board_domains, Arcs *arc_rules) {
     return NULL;
 }
 
+/* getting the new domains consists of making a deep copy of every other domain, and making the
+   domain of the space parameter to be only the new_value (effectively  this tile is "assumed solved"). */
 Domains *get_new_domains(Domains *board_domains, char *space, char new_value, Arcs *arc_rules) {
     int x = 0, y = 0, hash;
     char *domain_key = malloc(3 * sizeof(char));
@@ -367,7 +426,7 @@ Domains *get_new_domains(Domains *board_domains, char *space, char new_value, Ar
         }
         y = 0;
     }
-
+    /* after assuming this value, run AC3 to narrow down the domains of the other values as well. */
     AC3(new_domains, arc_rules);
     
     if (is_consistent(new_domains, ROWS, ROWS_LEN, COLUMNS, COL_LEN)) {
@@ -375,6 +434,3 @@ Domains *get_new_domains(Domains *board_domains, char *space, char new_value, Ar
     }
     return NULL;
 }
-/*=======================================================================*/ 
-/*======================= END SOLVER FUNCTIONS ==========================*/
-/*=======================================================================*/

@@ -37,6 +37,12 @@ typedef struct board {
     char**rows;
 } Sudoku_Board;
 
+typedef struct {
+    int ac3_only;
+} Command_Line_Args;
+
+void set_args(Command_Line_Args *args, char *argv[], int argc);
+int str_equal(char s1[], char s2[]);
 void load_row(char *squares_row[][9], int inner_index, char *letters, char *nums, Squares_Row *sq_row);
 void initialize_squares(Squares_Row *sq_row);
 void initialize_domains(Sudoku_Board *start_board, Domains *board_domains, Squares_Row *sq_row);
@@ -45,7 +51,6 @@ void initialize_arcs(Arcs *arc_rules, Squares_Row *sq_row);
 Arc_List *append_arc_list(Arc_List *new_list, char *value);
 void AC3(Domains *board_domains, Arcs *arc_rules);
 Domains *backtracking_search(Domains *board_domains, Arcs *arc_rules);
-
 Domains *get_new_domains(Domains *board_domains, char *space, char new_val, Arcs *arc_rules);
 int revise_domains(Domains *board_domains, char *tile1, char *tile2);
 

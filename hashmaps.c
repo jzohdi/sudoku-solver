@@ -35,6 +35,32 @@ int board_is_solved(Domains *board_domains, const char *rows, int row_len, const
     }
     return is_solved;
 }
+void print_unsolved_domains(Domains *board_domains, const char *rows, int row_len, const char *cols, int col_len) {
+    int x = 0, y = 0, hash;
+    char value;
+    char *space = malloc(2 * sizeof(char));
+
+    for (; x < row_len; x++) {
+        printf("|");        
+        for (; y < col_len; y++) {
+
+            space[0] = rows[x];
+            space[1] = cols[y];
+            
+            hash = hash_code(space);
+            
+            if (domain_list_len(board_domains -> values[hash]) == 1) {
+                value = board_domains -> values[hash] -> value;
+                printf("%c|", value);
+            } else {
+                printf("0|");
+            }
+        }
+        printf("\n");
+        y = 0;
+    }
+    free(space);
+}
 
 void print_solved_domains(Domains *board_domains, const char *rows, int row_len, const char*cols, int col_len) {
     int x = 0, y = 0, hash;
@@ -56,6 +82,7 @@ void print_solved_domains(Domains *board_domains, const char *rows, int row_len,
         printf("\n");
         y = 0;
     }
+    free(space);
 }
 
 void print_domain_list(Node *head) {
@@ -220,7 +247,9 @@ Space_List_Pair *get_min_list(Domains *board_domains, char **space_options) {
             min_len = curr_len;
             pair -> space = space_options[index];
             pair -> domain_list = board_domains -> values[hash];
-        
+            if (curr_len == 2) {
+                return pair;
+            }
         }
         index++;
     }

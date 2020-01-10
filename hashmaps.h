@@ -51,6 +51,7 @@ Node *deep_copy_list(Node *prev_list);
 Arc_List *append_arc_list(Arc_List *prev_list, char *value);
 int board_is_solved(Domains *board_domains, const char *rows, int row_len, const char *cols, int col_len);
 void print_solved_domains(Domains *board_domains, const char *rows, int row_len, const char *cols, int col_len);
+void print_unsolved_domains(Domains *board_domains, const char *rows, int row_len, const char *cols, int col_len);
 Node *remove_value_from_domain_list(Node *list, char val);
 
 #endif
