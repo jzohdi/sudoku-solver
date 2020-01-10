@@ -41,6 +41,7 @@ typedef struct {
     int ac3_only;
 } Command_Line_Args;
 
+int input_is_valid_length(char **rows);
 void set_args(Command_Line_Args *args, char *argv[], int argc);
 int str_equal(char s1[], char s2[]);
 void load_row(char *squares_row[][9], int inner_index, char *letters, char *nums, Squares_Row *sq_row);

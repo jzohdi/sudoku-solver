@@ -29,6 +29,10 @@ int main(int argc, char *argv[]) {
     for (; input_index < ROWS_LEN; input_index++) {
         scanf("%s", start_board.rows[input_index]);
     }
+    if (!input_is_valid_length(start_board.rows)){
+        printf("One or more rows given are not of valid length.\n");
+        return INVALID;
+    }
 
     initialize_domains(&start_board, &board_domains, &sq_row);
     initialize_arcs(&arc_rules, &sq_row);
@@ -60,6 +64,19 @@ int main(int argc, char *argv[]) {
 /* ====================START INIT SECTION =============================*/
 /* ====================START INIT SECTION =============================*/
 /* ====================START INIT SECTION =============================*/
+int input_is_valid_length(char **rows) {
+    int x = 0, y = 0;
+    for (; x < ROWS_LEN; x++) {
+        for (; y < COL_LEN; y++) {
+            if (rows[x][y] == '\0') {
+                return 0;
+            }
+        }
+        y = 0;
+    }
+    return 1;
+}
+
 int str_equal(char s1[], char s2[]) {
     int i = 0;
     for (; ; i++)
