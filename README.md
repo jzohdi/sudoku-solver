@@ -21,14 +21,20 @@ Manual
 
 ## Usage
 
+for all options
+
 ```
-> driver.x < inputfile.txt
+> driver.x help
+```
+
+```
+> driver.x file < inputfile.txt
 ```
 
 or
 
 ```
-> driver.x
+> driver.x terminal
 000000000
 302540000
 050301070
