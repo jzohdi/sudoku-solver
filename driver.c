@@ -3,7 +3,14 @@
 #include "driver.h"
 #include "queue.h"
 
-int main(void) {
+int main(int argc, char *argv[]) {
+    /* used to clear extra terminal input. */
+    char buffer[1024];
+    /*=command line args=*/
+    Command_Line_Args args;
+    args.ac3 = NO_MODE;
+    /* ================= */
+    char ask_again;
     int x = 0, y = 0;
     int input_index = 0;
     Squares_Row sq_row;
@@ -12,37 +19,197 @@ int main(void) {
     Domains *solved_domains;
     Arcs arc_rules;
     
-    initialize_squares(&sq_row);
+    /*=== set command line args ===*/
+    if (argc == 1) {
+        printf("Invalid number of arguments, use help for list of commands.\n");
+        return INVALID;
+    } else {
+        set_args(&args, argv, argc);
+    }
+    /*=============================*/
 
-    init_empty_board(&start_board);
-    for (; input_index < ROWS_LEN; input_index++) {
-        scanf("%s", start_board.rows[input_index]);
+    if (args.input_mode == HELP_MODE) {
+        print_commands();
+        return VALID;
+    }
+    if (args.input_mode == NO_MODE) {
+        printf("No input mode command found, use help command for list.\n");
+        return INVALID;
     }
 
+    initialize_squares(&sq_row);
+    init_empty_board(&start_board);
+
+    if (args.input_mode == TRMNL_MODE) {
+        printf("\n");
+        printf("Enter each row of the board starting with the top row.\n");
+        printf("Characters past the first 9 will be ignored.\n");
+        printf("Example Row 1: 000260701\n");
+        printf("\n");
+        for (; input_index < ROWS_LEN; input_index++) {
+            printf("Row %d: ", input_index + 1);
+            fgets(start_board.rows[input_index], 10, stdin);
+
+            /* remove extra characters from stdin. */
+            if ((fseek(stdin, 0, SEEK_END), ftell(stdin)) > 0) {
+                rewind(stdin);
+                fgets(buffer, 1024 , stdin);
+            }
+
+            for (; y < COL_LEN; y++) {
+                if (start_board.rows[input_index][y] == '\0' || start_board.rows[input_index][y] == 10) {
+                    printf("Last entered row too short.\n");
+                    input_index--;
+                }
+            }
+
+            y = 0;
+        }
+    } else if (args.input_mode == FILE_MODE) {
+            if ((fseek(stdin, 0, SEEK_END), ftell(stdin)) > 0){
+                rewind(stdin);
+                for (; input_index < ROWS_LEN; input_index++) {
+                    fgets(start_board.rows[input_index], 10, stdin);
+                    ask_again = getchar();
+                    if (input_index != 8 && ask_again != '\n') {
+                        printf("One or more rows given are not of valid length.\n");
+                        return INVALID;
+                    }
+                    if (input_index == 8 && ask_again != EOF) {
+                        printf("File given to stdin too long.");
+                        return INVALID;
+                    }
+                }
+            } else {
+                printf("Input empty.\n");
+                return INVALID;
+            }
+    }
+
+    printf("\nStarting Sudoku board:\n");
+    print_board(start_board.rows);
+    printf("\n");
     initialize_domains(&start_board, &board_domains, &sq_row);
     initialize_arcs(&arc_rules, &sq_row);
 
     AC3(&board_domains, &arc_rules);
 
     if (board_is_solved(&board_domains, ROWS, ROWS_LEN, COLUMNS, COL_LEN)) {
-        printf("solved with AC3 algorithm:\n");
+        printf("Solved with AC3 algorithm:\n");
         print_solved_domains(&board_domains, ROWS, ROWS_LEN, COLUMNS, COL_LEN);
+        printf("\n");        
         return VALID;
+
+    } else if (args.ac3 == AC3_ONLY) {
+        printf("Board progress after AC3:\n");
+        print_unsolved_domains(&board_domains, ROWS, ROWS_LEN, COLUMNS, COL_LEN);
+        printf("\n");        
+        return VALID;
+    } else if (args.ac3 == AC3_) {
+        printf("Board progress after AC3:\n");
+        print_unsolved_domains(&board_domains, ROWS, ROWS_LEN, COLUMNS, COL_LEN);
+        printf("\n");
     }
 
     solved_domains = backtracking_search(&board_domains, &arc_rules);
+
     if (solved_domains != NULL) {
         printf("solved with Back Tracking Search:\n");
         print_solved_domains(solved_domains, ROWS, ROWS_LEN, COLUMNS, COL_LEN);
+        printf("\n");        
         return VALID;
     }
+
     printf("Board given is not valid.\n");
     return INVALID;
 }
 
+void print_commands() {
+    char *example_board[] = {"\t  000260701\n", "\t  680070090\n", "\t  ...\n"};
+    char *cmd1[] = {"\thelp", ":", " list commands.\n"};
+    char *cmd2[] = {"\tterminal", ":", " sudoku board will be read from terminal input.\n"};
+    char *cmd3[] = {"\tfile", ":", " sudoku board will be read from < file.txt.\n"};
+    char *cmd4[] = {"\tac3", ":", " if the board could not be solved completely by ac3 algorithm, print out after this step as well.\n"};
+    char *cmd5[] = {"\tac3-only", ":", " if the board could not be solved completely by ac3 algorithm, print out after this step and exit.\n"};
+
+    printf("\n");
+    printf("  Commands: \n");
+    printf("%s %5s %s",cmd1[0], cmd1[1], cmd1[2]);
+    printf("%s %s %s", cmd2[0], cmd2[1], cmd2[2]);
+    printf("%s %5s %s", cmd3[0], cmd3[1], cmd3[2]);
+    printf("\t  file.txt should be formatted with each row on a new line. Example:\n");
+    printf("%s", example_board[0]);
+    printf("%s", example_board[1]);
+    printf("%s", example_board[2]);    
+    printf("%s %6s %s", cmd4[0], cmd4[1], cmd4[2]);
+    printf("%s %1s %s", cmd5[0], cmd5[1], cmd5[2]);
+}
+
+void print_board(char rows[9][9]) {
+    int x = 0, y = 0;
+    for (; x < ROWS_LEN; x++) {
+        printf("|");
+        for (; y < COL_LEN; y++) {
+            printf("%c|", rows[x][y]);
+        }
+        printf("\n");
+        y = 0;
+    }
+}
+int input_is_valid_length(char rows[9][9]) {
+    int x = 0, y = 0;
+    for (; x < ROWS_LEN; x++) {
+        for (; y < COL_LEN; y++) {
+            if (rows[x][y] == '\0') {
+                return 0;
+            }
+        }
+        y = 0;
+    }
+    return 1;
+}
+
+int str_equal(char s1[], char s2[]) {
+    int i = 0;
+    for (; ; i++)
+    {
+        if (s1[i] != s2[i])
+        {
+            return 0;
+        }
+
+        if (s1[i] == '\0')
+        {
+            return 1;
+        }
+    }
+}
 /* ====================START INIT SECTION =============================*/
 /* ====================START INIT SECTION =============================*/
 /* ====================START INIT SECTION =============================*/
+
+void set_args(Command_Line_Args *args, char *argv[], int argc) {
+    int index = 1;
+    args -> ac3 = 0;
+
+    for (; index < argc; index++) {
+        if (str_equal(argv[index], "ac3")) {
+            args -> ac3 = AC3_;
+        }
+        if (str_equal(argv[index], "ac3-only")) {
+            args -> ac3 = AC3_ONLY;
+        }
+        if (str_equal(argv[index], "help")) {
+            args -> input_mode = HELP_MODE;
+        }
+        if (str_equal(argv[index], "file")) {
+            args -> input_mode = FILE_MODE;
+        }
+        if (str_equal(argv[index], "terminal")) {
+            args -> input_mode = TRMNL_MODE;
+        }
+    }
+}
 
 /* load row is used to add the tile symbols in the squares board. 
    after this function is done the squares variable contains, see SQUARES in driver.h 
@@ -133,14 +300,11 @@ void initialize_domains(Sudoku_Board *start_board, Domains *board_domains, Squar
    all containing the empty space indicator 0 */
 void init_empty_board(Sudoku_Board *empty_board) {
     int index = 0, col_index = 0;
-    empty_board -> rows = malloc(ROWS_LEN * sizeof(char *));
 
     for (; index < ROWS_LEN; index++) {
-        empty_board -> rows[index] = malloc((1 + COL_LEN) * sizeof(char));
         for (; col_index < COL_LEN; col_index++) {
-            empty_board -> rows[index][col_index] = EMPTY_SPACE;
+            empty_board -> rows[index][col_index] = '\0';
         }
-        empty_board -> rows[index][col_index] = '\0';
         col_index = 0;
     }
 }
@@ -222,10 +386,8 @@ void initialize_arcs(Arcs *arc_rules, Squares_Row *sq_row) {
 /* ======================END INIT SECTION =============================*/
 /* ======================END INIT SECTION =============================*/
 
-/*=======================================================================*/ 
-/*===================== START SOLVER FUNCTIONS ==========================*/
-/*=======================================================================*/
-
+/* AC-3 is a constraint satisfaction problem (CSP) algorithim where taking in sets of rules
+   about the problem, fills in the board by a process of elimination. */
 void AC3(Domains *board_domains, Arcs *arc_rules) {
     char *space, *arc_tile;
     int x = 0, y = 0, hash;
@@ -235,7 +397,7 @@ void AC3(Domains *board_domains, Arcs *arc_rules) {
 
     init_queue(&queue);
 
-    /* build queueue with every combination of pairs of arc rules. */
+    /* build queueue with every combination of pairs between a tile and its arc rules. */
     for(;x < ROWS_LEN; x++){
         for(;y < COL_LEN; y++) {
 
@@ -260,6 +422,8 @@ void AC3(Domains *board_domains, Arcs *arc_rules) {
         y = 0;
     }
 
+    /* grab a pair out of the queue. if we can revise the board using this pair, then need to add the pair 
+       as well as all the pairs made from the first value and its arc rules back into the queue. */
     while(!queue_is_empty(&queue)) {
 
         pair = shift_queue(&queue);
@@ -279,6 +443,10 @@ void AC3(Domains *board_domains, Arcs *arc_rules) {
 
 }
 
+/* revising the domain for the tiles consists of checking the domains of the the 
+   two tiles are open domains. To do so, iterate over the domain of the first tile (ex: 1, 2, 3, ...),
+   then check that there is a value in the tile2 domain that is not the current value. For example:
+   if the only value in the tile2 domain is 2, then we must remove this value from tile1's domain. */
 int revise_domains(Domains *board_domains, char *tile1, char *tile2) {
     int revised = 0, possible = 0, hash1;
     Node *head1, *curr1, *curr2;
@@ -310,6 +478,11 @@ int revise_domains(Domains *board_domains, char *tile1, char *tile2) {
     return revised;
 }
 
+/* backtracking search algorithim is a type of depth first search that files in a new copy
+   of the domain with an "assumed solved tile". If there are certain tiles that are not solved yet,
+   then we assumed one of the domain values for this tile, then keep repeating this process until
+   either solving the board or hitting an inconsistency. If getting to a dead end, the algorithm 
+   "backtracks" and for the last assumed tile, we now assume another value from the domain instead. */
 Domains *backtracking_search(Domains *board_domains, Arcs *arc_rules) {
     Domains *new_domains, *result;
     Space_List_Pair *space_w_list;
@@ -317,18 +490,24 @@ Domains *backtracking_search(Domains *board_domains, Arcs *arc_rules) {
     char **unsolved_keys;
     int index = 0;
     char *curr;
+
+    /* if the board is solved return this board. */
     if (board_is_solved(board_domains, ROWS, ROWS_LEN, COLUMNS, COL_LEN)) {
         return board_domains;
     }
 
+    /* get the list of keys (tiles) from the board that are still unsolved. */
     unsolved_keys = get_unsolved_domain_keys(board_domains, ROWS, ROWS_LEN, COLUMNS, COL_LEN);
 
+    /* choose a tile to assume the value for (start with tiles with the smallest possible options). */
     space_w_list = get_min_list(board_domains, unsolved_keys);
     curr_val = space_w_list -> domain_list;
 
+    /* for each of the values in the selected tile's domain, get a new domain for the board and continue to BTS. */
     while (curr_val != NULL) {
         new_domains = get_new_domains(board_domains, space_w_list -> space, curr_val -> value, arc_rules);
-
+        
+        /* we only get to this point if the board is solved or hit a dead end (NULL). */
         if (new_domains != NULL) {
             result = backtracking_search(new_domains, arc_rules);
     
@@ -341,6 +520,8 @@ Domains *backtracking_search(Domains *board_domains, Arcs *arc_rules) {
     return NULL;
 }
 
+/* getting the new domains consists of making a deep copy of every other domain, and making the
+   domain of the space parameter to be only the new_value (effectively  this tile is "assumed solved"). */
 Domains *get_new_domains(Domains *board_domains, char *space, char new_value, Arcs *arc_rules) {
     int x = 0, y = 0, hash;
     char *domain_key = malloc(3 * sizeof(char));
@@ -367,7 +548,7 @@ Domains *get_new_domains(Domains *board_domains, char *space, char new_value, Ar
         }
         y = 0;
     }
-
+    /* after assuming this value, run AC3 to narrow down the domains of the other values as well. */
     AC3(new_domains, arc_rules);
     
     if (is_consistent(new_domains, ROWS, ROWS_LEN, COLUMNS, COL_LEN)) {
@@ -375,6 +556,3 @@ Domains *get_new_domains(Domains *board_domains, char *space, char new_value, Ar
     }
     return NULL;
 }
-/*=======================================================================*/ 
-/*======================= END SOLVER FUNCTIONS ==========================*/
-/*=======================================================================*/

@@ -35,6 +35,32 @@ int board_is_solved(Domains *board_domains, const char *rows, int row_len, const
     }
     return is_solved;
 }
+void print_unsolved_domains(Domains *board_domains, const char *rows, int row_len, const char *cols, int col_len) {
+    int x = 0, y = 0, hash;
+    char value;
+    char *space = malloc(2 * sizeof(char));
+
+    for (; x < row_len; x++) {
+        printf("|");        
+        for (; y < col_len; y++) {
+
+            space[0] = rows[x];
+            space[1] = cols[y];
+            
+            hash = hash_code(space);
+            
+            if (domain_list_len(board_domains -> values[hash]) == 1) {
+                value = board_domains -> values[hash] -> value;
+                printf("%c|", value);
+            } else {
+                printf("0|");
+            }
+        }
+        printf("\n");
+        y = 0;
+    }
+    free(space);
+}
 
 void print_solved_domains(Domains *board_domains, const char *rows, int row_len, const char*cols, int col_len) {
     int x = 0, y = 0, hash;
@@ -56,6 +82,7 @@ void print_solved_domains(Domains *board_domains, const char *rows, int row_len,
         printf("\n");
         y = 0;
     }
+    free(space);
 }
 
 void print_domain_list(Node *head) {
@@ -215,18 +242,25 @@ Space_List_Pair *get_min_list(Domains *board_domains, char **space_options) {
     while(space_options[index] != NULL) {
         hash = hash_code(space_options[index]);
         curr_len = domain_list_len(board_domains -> values[hash]);
-        // printf("space: %s length %d\n", space_options[index], curr_len);
+
         if (curr_len < min_len) {
             min_len = curr_len;
             pair -> space = space_options[index];
             pair -> domain_list = board_domains -> values[hash];
-        
+
+            if (curr_len == 2) {
+                return pair;
+            }
         }
         index++;
     }
     return pair;
 }
 
+/* deep copy is necessary while making a new copy of the board domains. 
+   Each node must be made a deep copy of since if two separate copies
+   of the board domains contained the same instance of Node's, their
+   next member would not be retained across all copies. */
 Node *deep_copy_list(Node *prev_list) {
     Node *temp = NULL;
     Node *new_curr = NULL;
@@ -250,6 +284,8 @@ Node *deep_copy_list(Node *prev_list) {
     return new_head;
 }
 
+/* for the arc rule list, order doesn't matter so appending is 
+   done by adding a node to the front of the linked list.*/
 Arc_List *append_arc_list(Arc_List *prev_list, char *value) {
     Arc_List *new_node = malloc(sizeof(Arc_List));
     new_node -> value = value;
@@ -267,6 +303,8 @@ Arc_List *append_arc_list(Arc_List *prev_list, char *value) {
 Node *remove_value_from_domain_list(Node *list, char val) {
     Node *prev, *temp, *curr = list;
     
+    /* if val is the list's head value, then return the second node 
+      (or NULL if list was size 1) */
     if (curr -> value == val) {
         list = list -> next;
         curr -> next = NULL;
@@ -275,6 +313,9 @@ Node *remove_value_from_domain_list(Node *list, char val) {
     }
 
     prev = curr;
+
+    /* else find the correct node to remove and set the previous node's 
+       next pointer to node to remove's next. */
     while (curr != NULL) {
 
         if (curr -> value == val) {
