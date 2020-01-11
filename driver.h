@@ -3,13 +3,19 @@
 #if !defined DRIVERH
 #define DRIVERH
 
-#define VALID 1
-#define INVALID 0
+#define VALID 0
+#define INVALID 1
 #define ROWS_LEN 9
 #define COL_LEN 9
 #define DOMAIN_LEN 9
 #define SQUARE_NUM 9
 #define EMPTY_SPACE '0'
+#define NO_MODE 0
+#define TRMNL_MODE 1
+#define FILE_MODE 2
+#define HELP_MODE 3
+#define AC3_ 1
+#define AC3_ONLY 2
 
 /* Iterating over rows/domains (both char) give the board layout:
    |A1|A2|A3|A4|A5|A6|A7|A8|A9|
@@ -34,14 +40,17 @@ const char COLUMNS[] = {'1', '2', '3', '4', '5', '6', '7', '8', '9', '\0'};
 char *SQUARES[9][9];
 
 typedef struct board {
-    char**rows;
+    char rows[9][9];
 } Sudoku_Board;
 
 typedef struct {
-    int ac3_only;
+    int ac3;
+    int input_mode;
 } Command_Line_Args;
 
-int input_is_valid_length(char **rows);
+void print_commands();
+int input_is_valid_length(char rows[9][9]);
+void print_board(char rows[9][9]);
 void set_args(Command_Line_Args *args, char *argv[], int argc);
 int str_equal(char s1[], char s2[]);
 void load_row(char *squares_row[][9], int inner_index, char *letters, char *nums, Squares_Row *sq_row);

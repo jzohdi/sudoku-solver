@@ -4,11 +4,13 @@
 #include "queue.h"
 
 int main(int argc, char *argv[]) {
+    /* used to clear extra terminal input. */
+    char buffer[1024];
     /*=command line args=*/
     Command_Line_Args args;
-    args.ac3_only = 0;
+    args.ac3 = NO_MODE;
     /* ================= */
-    
+    char ask_again;
     int x = 0, y = 0;
     int input_index = 0;
     Squares_Row sq_row;
@@ -18,22 +20,75 @@ int main(int argc, char *argv[]) {
     Arcs arc_rules;
     
     /*=== set command line args ===*/
-    if (argc > 1){
+    if (argc == 1) {
+        printf("Invalid number of arguments, use help for list of commands.\n");
+        return INVALID;
+    } else {
         set_args(&args, argv, argc);
     }
     /*=============================*/
 
-    initialize_squares(&sq_row);
-    init_empty_board(&start_board);
-
-    for (; input_index < ROWS_LEN; input_index++) {
-        scanf("%s", start_board.rows[input_index]);
+    if (args.input_mode == HELP_MODE) {
+        print_commands();
+        return VALID;
     }
-    if (!input_is_valid_length(start_board.rows)){
-        printf("One or more rows given are not of valid length.\n");
+    if (args.input_mode == NO_MODE) {
+        printf("No input mode command found, use help command for list.\n");
         return INVALID;
     }
 
+    initialize_squares(&sq_row);
+    init_empty_board(&start_board);
+
+    if (args.input_mode == TRMNL_MODE) {
+        printf("\n");
+        printf("Enter each row of the board starting with the top row.\n");
+        printf("Characters past the first 9 will be ignored.\n");
+        printf("Example Row 1: 000260701\n");
+        printf("\n");
+        for (; input_index < ROWS_LEN; input_index++) {
+            printf("Row %d: ", input_index + 1);
+            fgets(start_board.rows[input_index], 10, stdin);
+
+            /* remove extra characters from stdin. */
+            if ((fseek(stdin, 0, SEEK_END), ftell(stdin)) > 0) {
+                rewind(stdin);
+                fgets(buffer, 1024 , stdin);
+            }
+
+            for (; y < COL_LEN; y++) {
+                if (start_board.rows[input_index][y] == '\0' || start_board.rows[input_index][y] == 10) {
+                    printf("Last entered row too short.\n");
+                    input_index--;
+                }
+            }
+
+            y = 0;
+        }
+    } else if (args.input_mode == FILE_MODE) {
+            if ((fseek(stdin, 0, SEEK_END), ftell(stdin)) > 0){
+                rewind(stdin);
+                for (; input_index < ROWS_LEN; input_index++) {
+                    fgets(start_board.rows[input_index], 10, stdin);
+                    ask_again = getchar();
+                    if (input_index != 8 && ask_again != '\n') {
+                        printf("One or more rows given are not of valid length.\n");
+                        return INVALID;
+                    }
+                    if (input_index == 8 && ask_again != EOF) {
+                        printf("File given to stdin too long.");
+                        return INVALID;
+                    }
+                }
+            } else {
+                printf("Input empty.\n");
+                return INVALID;
+            }
+    }
+
+    printf("\nStarting Sudoku board:\n");
+    print_board(start_board.rows);
+    printf("\n");
     initialize_domains(&start_board, &board_domains, &sq_row);
     initialize_arcs(&arc_rules, &sq_row);
 
@@ -42,29 +97,66 @@ int main(int argc, char *argv[]) {
     if (board_is_solved(&board_domains, ROWS, ROWS_LEN, COLUMNS, COL_LEN)) {
         printf("Solved with AC3 algorithm:\n");
         print_solved_domains(&board_domains, ROWS, ROWS_LEN, COLUMNS, COL_LEN);
+        printf("\n");        
         return VALID;
 
-    } else if (args.ac3_only) {
-        printf("Board progress using only AC3:\n");
+    } else if (args.ac3 == AC3_ONLY) {
+        printf("Board progress after AC3:\n");
         print_unsolved_domains(&board_domains, ROWS, ROWS_LEN, COLUMNS, COL_LEN);
+        printf("\n");        
         return VALID;
+    } else if (args.ac3 == AC3_) {
+        printf("Board progress after AC3:\n");
+        print_unsolved_domains(&board_domains, ROWS, ROWS_LEN, COLUMNS, COL_LEN);
+        printf("\n");
     }
 
-
     solved_domains = backtracking_search(&board_domains, &arc_rules);
+
     if (solved_domains != NULL) {
         printf("solved with Back Tracking Search:\n");
         print_solved_domains(solved_domains, ROWS, ROWS_LEN, COLUMNS, COL_LEN);
+        printf("\n");        
         return VALID;
     }
+
     printf("Board given is not valid.\n");
     return INVALID;
 }
 
-/* ====================START INIT SECTION =============================*/
-/* ====================START INIT SECTION =============================*/
-/* ====================START INIT SECTION =============================*/
-int input_is_valid_length(char **rows) {
+void print_commands() {
+    char *example_board[] = {"\t  000260701\n", "\t  680070090\n", "\t  ...\n"};
+    char *cmd1[] = {"\thelp", ":", " list commands.\n"};
+    char *cmd2[] = {"\tterminal", ":", " sudoku board will be read from terminal input.\n"};
+    char *cmd3[] = {"\tfile", ":", " sudoku board will be read from < file.txt.\n"};
+    char *cmd4[] = {"\tac3", ":", " if the board could not be solved completely by ac3 algorithm, print out after this step as well.\n"};
+    char *cmd5[] = {"\tac3-only", ":", " if the board could not be solved completely by ac3 algorithm, print out after this step and exit.\n"};
+
+    printf("\n");
+    printf("  Commands: \n");
+    printf("%s %5s %s",cmd1[0], cmd1[1], cmd1[2]);
+    printf("%s %s %s", cmd2[0], cmd2[1], cmd2[2]);
+    printf("%s %5s %s", cmd3[0], cmd3[1], cmd3[2]);
+    printf("\t  file.txt should be formatted with each row on a new line. Example:\n");
+    printf("%s", example_board[0]);
+    printf("%s", example_board[1]);
+    printf("%s", example_board[2]);    
+    printf("%s %6s %s", cmd4[0], cmd4[1], cmd4[2]);
+    printf("%s %1s %s", cmd5[0], cmd5[1], cmd5[2]);
+}
+
+void print_board(char rows[9][9]) {
+    int x = 0, y = 0;
+    for (; x < ROWS_LEN; x++) {
+        printf("|");
+        for (; y < COL_LEN; y++) {
+            printf("%c|", rows[x][y]);
+        }
+        printf("\n");
+        y = 0;
+    }
+}
+int input_is_valid_length(char rows[9][9]) {
     int x = 0, y = 0;
     for (; x < ROWS_LEN; x++) {
         for (; y < COL_LEN; y++) {
@@ -92,13 +184,29 @@ int str_equal(char s1[], char s2[]) {
         }
     }
 }
+/* ====================START INIT SECTION =============================*/
+/* ====================START INIT SECTION =============================*/
+/* ====================START INIT SECTION =============================*/
 
 void set_args(Command_Line_Args *args, char *argv[], int argc) {
     int index = 1;
-    
+    args -> ac3 = 0;
+
     for (; index < argc; index++) {
-        if (str_equal(argv[index], "ac3\0")) {
-            args -> ac3_only = 1;
+        if (str_equal(argv[index], "ac3")) {
+            args -> ac3 = AC3_;
+        }
+        if (str_equal(argv[index], "ac3-only")) {
+            args -> ac3 = AC3_ONLY;
+        }
+        if (str_equal(argv[index], "help")) {
+            args -> input_mode = HELP_MODE;
+        }
+        if (str_equal(argv[index], "file")) {
+            args -> input_mode = FILE_MODE;
+        }
+        if (str_equal(argv[index], "terminal")) {
+            args -> input_mode = TRMNL_MODE;
         }
     }
 }
@@ -192,14 +300,11 @@ void initialize_domains(Sudoku_Board *start_board, Domains *board_domains, Squar
    all containing the empty space indicator 0 */
 void init_empty_board(Sudoku_Board *empty_board) {
     int index = 0, col_index = 0;
-    empty_board -> rows = malloc(ROWS_LEN * sizeof(char *));
 
     for (; index < ROWS_LEN; index++) {
-        empty_board -> rows[index] = malloc((1 + COL_LEN) * sizeof(char));
         for (; col_index < COL_LEN; col_index++) {
             empty_board -> rows[index][col_index] = '\0';
         }
-        empty_board -> rows[index][col_index] = '\0';
         col_index = 0;
     }
 }
