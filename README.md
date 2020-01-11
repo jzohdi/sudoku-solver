@@ -21,11 +21,13 @@ Manual
 
 ## Usage
 
-for all options
+For all options
 
 ```
 > driver.x help
 ```
+
+Running
 
 ```
 > driver.x file < inputfile.txt
@@ -35,15 +37,15 @@ or
 
 ```
 > driver.x terminal
-000000000
-302540000
-050301070
-000000004
-409006005
-023054790
-000000050
-700810000
-080060009
+Row 1: 000000000
+Row 2: 302540000
+Row 3: 050301070
+Row 4: 000000004
+Row 5: 409006005
+Row 6: 023054790
+Row 7: 000000050
+Row 8: 700810000
+Row 9: 080060009
 ```
 
 Output
