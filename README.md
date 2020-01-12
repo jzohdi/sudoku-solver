@@ -1,6 +1,6 @@
 # Sudoku.C
 
-Sudoku.C is a C program that solves Sudoku boards. The program first attemps to solve the Sudoku board first with the constrain satisfaction algorithm [AC-3](https://en.wikipedia.org/wiki/AC-3_algorithm), which uses the rules of Sudoku to fill in spaces where a single possible value is left given the other starting values. If this algorithm is not enough to complete the board, the rest will be completed with [Back Tracking Search](https://en.wikipedia.org/wiki/Backtracking) (BTS). BTS is implemented here as a recurssive depth-first search.
+Sudoku.C is a command line based program that solves Sudoku boards. The program first attemps to solve the Sudoku board first with the constrain satisfaction algorithm [AC-3](https://en.wikipedia.org/wiki/AC-3_algorithm), which uses the rules of Sudoku to fill in spaces where a single possible value is left given the other starting values. If this algorithm is not enough to complete the board, the rest will be completed with [Back Tracking Search](https://en.wikipedia.org/wiki/Backtracking) (BTS). BTS is implemented here as a recurssive depth-first search.
 
 ## Compilation
 
