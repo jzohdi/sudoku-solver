@@ -43,6 +43,8 @@ char *SQUARES[9][9];
 typedef struct {
     int ac3;
     int input_mode;
+    int write_out;
+    char *file_name;
 } Command_Line_Args;
 
 typedef struct board {
@@ -51,9 +53,9 @@ typedef struct board {
 } Sudoku_Board;
 
 void print_commands();
-int input_is_valid_length(char rows[9][9]);
 void print_board(char rows[9][9]);
 void set_args(Sudoku_Board *board, char *argv[], int argc);
+int str_contains_char(char s[], char c);
 int is_number(char s[]);
 int is_digit(char c);
 int str_len(char s[]);

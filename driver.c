@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <fcntl.h>
 #include "driver.h"
 #include "queue.h"
 
@@ -18,6 +20,8 @@ int main(int argc, char *argv[]) {
     Domains board_domains;
     Domains *solved_domains;
     Arcs arc_rules;
+    FILE *fptr;
+    int file_desc;
     
     start_board.cmd = &args;
     
@@ -91,6 +95,13 @@ int main(int argc, char *argv[]) {
             }
     }
 
+    /* if write out given, have stdout go to file name given instead. */
+    if (args.write_out) {
+        int file_desc = open(args.file_name, O_WRONLY | O_APPEND | O_CREAT);
+        printf("%d\n", file_desc);
+        dup2(file_desc, 1);
+    }
+
     printf("\nStarting Sudoku board:\n");
     print_board(start_board.rows);
     printf("\n");
@@ -128,15 +139,19 @@ int main(int argc, char *argv[]) {
     printf("Board given is not valid.\n");
     return INVALID;
 }
+/*================================================================================*/
+/*========================== HELPER FUNCTIONS ====================================*/
+/*================================================================================*/
 
 void print_commands() {
     char *example_board[] = {"\t  000260701\n", "\t  680070090\n", "\t  ...\n"};
     char *cmd1[] = {"\thelp", ":", " list commands.\n"};
-    char *cmd2[] = {"\tterminal", ":", " sudoku board will be read from terminal input.\n"};
-    char *cmd3[] = {"\tfile", ":", " sudoku board will be read from < file.txt.\n"};
-    char *cmd4[] = {"\tline", ":", " sudoku board will be read from the proceeding command line argument. line should be formatted as a single string starting with the top row on the left. Example: 000260701680070090...\n"};
-    char *cmd5[] = {"\tac3", ":", " if the board could not be solved completely by ac3 algorithm, print out after this step as well.\n"};
-    char *cmd6[] = {"\tac3-only", ":", " if the board could not be solved completely by ac3 algorithm, print out after this step and exit.\n"};
+    char *cmd2[] = {"\tterminal", ":", " Sudoku board will be read from terminal input.\n"};
+    char *cmd3[] = {"\tfile", ":", " Sudoku board will be read from < file.txt.\n"};
+    char *cmd4[] = {"\tline", ":", " Sudoku board will be read from the proceeding command line argument. line should be formatted as a single string starting with the top row on the left. Example: 000260701680070090...\n"};
+    char *cmd5[] = {"\tout", ":", " The proceeding command line argument must be a file name, then file name must contain '.'(ex: output.). The output of the program will write to the file name given. If the file already exists, the output will append to the file.\n"};
+    char *cmd6[] = {"\tac3", ":", " If the board could not be solved completely by ac3 algorithm, print out after this step as well.\n"};
+    char *cmd7[] = {"\tac3-only", ":", " If the board could not be solved completely by ac3 algorithm, print out after this step and exit.\n"};
 
     printf("\n");
     printf("  Commands: \n");
@@ -153,7 +168,8 @@ void print_commands() {
     printf("\n");
     printf("   -Optional arguements: \n");
     printf("%s %6s %s", cmd5[0], cmd5[1], cmd5[2]);
-    printf("%s %1s %s", cmd6[0], cmd6[1], cmd6[2]);
+    printf("%s %6s %s", cmd6[0], cmd6[1], cmd6[2]);
+    printf("%s %1s %s", cmd7[0], cmd7[1], cmd7[2]);
 }
 
 void print_board(char rows[9][9]) {
@@ -168,36 +184,25 @@ void print_board(char rows[9][9]) {
     }
 }
 
-int input_is_valid_length(char rows[9][9]) {
-    int x = 0, y = 0;
-    for (; x < ROWS_LEN; x++) {
-        for (; y < COL_LEN; y++) {
-            if (rows[x][y] == '\0') {
-                return 0;
-            }
-        }
-        y = 0;
-    }
-    return 1;
-}
-
+/* is the string a valid number. */
 int is_number(char s[]) {
     int i = 0;
     while(s[i] != '\0')
         if (!is_digit(s[i++])) return 0;
     return 1;
 }
+/* is the character a digit between 0 and 9. */
 int is_digit(char c) {
     return c >= '0' && c <= '9';
 }
-
+/* the length of a string as int. */
 int str_len(char s[]) {
     int len = 0;
     while(s[len++] != '\0');
     
     return len - 1;
 }
-
+/* check that two strings are equals. */
 int str_equal(char s1[], char s2[]) {
     int i = 0;
     for (; ; i++)
@@ -213,15 +218,37 @@ int str_equal(char s1[], char s2[]) {
         }
     }
 }
+
+int str_contains_char(char s[], char c) {
+    int index = 0;
+    while (s[index] != '\0') {
+        if (s[index++] == c)
+            return 1;
+    }
+    return 0;
+}
 /* ====================START INIT SECTION =============================*/
 /* ====================START INIT SECTION =============================*/
 /* ====================START INIT SECTION =============================*/
 
+/* read and parse the command line args. */
 void set_args(Sudoku_Board *board, char *argv[], int argc) {
     int index = 1, x = 0, y = 0;
     board -> cmd -> ac3 = 0;
+    board -> cmd -> write_out = 0;
 
     for (; index < argc; index++) {
+        if (str_equal(argv[index], "out")) {
+            if (index == argc - 1 || !str_contains_char(argv[index + 1], '.')) {
+                printf("No file name found or invalid extension.");
+                exit(-1);
+            }
+            board -> cmd -> write_out = 1;
+            board -> cmd -> file_name = argv[index + 1];
+
+            /* can skip the next cmd line arg. */
+            index++;
+        }
         if (str_equal(argv[index], "ac3")) {
             board -> cmd -> ac3 = AC3_;
         }
@@ -237,10 +264,12 @@ void set_args(Sudoku_Board *board, char *argv[], int argc) {
         if (str_equal(argv[index], "terminal")) {
             board -> cmd -> input_mode = TRMNL_MODE;
         }
+        /*  if input line, check that the next arg is a valid board and then set 
+            start_board rows. s*/
         if (str_equal(argv[index], "line")) {
             if (index == argc - 1 || !is_number(argv[index + 1]) || str_len(argv[index + 1]) != 81) {
                 printf("Argument proceeding line is not valid.");
-                exit(INVALID);
+                exit(-1);
             }
             board -> cmd -> input_mode = LINE_MODE;
             /* parse the next arg into board rows. */
