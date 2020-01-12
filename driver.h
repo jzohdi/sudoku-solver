@@ -1,7 +1,7 @@
-#include "hashmaps.h"
-
 #if !defined DRIVERH
 #define DRIVERH
+
+#include "hashmaps.h"
 
 #define VALID 0
 #define INVALID 1
@@ -13,7 +13,8 @@
 #define NO_MODE 0
 #define TRMNL_MODE 1
 #define FILE_MODE 2
-#define HELP_MODE 3
+#define LINE_MODE 3
+#define HELP_MODE 4
 #define AC3_ 1
 #define AC3_ONLY 2
 
@@ -39,19 +40,23 @@ const char COLUMNS[] = {'1', '2', '3', '4', '5', '6', '7', '8', '9', '\0'};
    |G1|G2|G3|H1|H2|H3|I1|I2|I3|, |G4|G5|G6|H4|H5|H6|I4|I5|I6|, |G7|G8|G9|H7|H8|H9|I7|I8|I9|  */
 char *SQUARES[9][9];
 
-typedef struct board {
-    char rows[9][9];
-} Sudoku_Board;
-
 typedef struct {
     int ac3;
     int input_mode;
 } Command_Line_Args;
 
+typedef struct board {
+    Command_Line_Args *cmd;
+    char rows[9][9];
+} Sudoku_Board;
+
 void print_commands();
 int input_is_valid_length(char rows[9][9]);
 void print_board(char rows[9][9]);
-void set_args(Command_Line_Args *args, char *argv[], int argc);
+void set_args(Sudoku_Board *board, char *argv[], int argc);
+int is_number(char s[]);
+int is_digit(char c);
+int str_len(char s[]);
 int str_equal(char s1[], char s2[]);
 void load_row(char *squares_row[][9], int inner_index, char *letters, char *nums, Squares_Row *sq_row);
 void initialize_squares(Squares_Row *sq_row);
