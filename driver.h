@@ -70,4 +70,7 @@ Domains *backtracking_search(Domains *board_domains, Arcs *arc_rules);
 Domains *get_new_domains(Domains *board_domains, char *space, char new_val, Arcs *arc_rules);
 int revise_domains(Domains *board_domains, char *tile1, char *tile2);
 
+/* functions to free memory. */
+void free_squares(char *squares[9][9]);
+
 #endif

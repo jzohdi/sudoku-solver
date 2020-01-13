@@ -28,7 +28,6 @@ int main(int argc, char *argv[]) {
     args.ac3 = NO_MODE;
     start_board.cmd = &args;
 
-    initialize_squares(&sq_row);
     init_empty_board(&start_board);
 
     /*=== set command line args ===*/
@@ -129,8 +128,11 @@ int main(int argc, char *argv[]) {
     printf("\nStarting Sudoku board:\n");
     print_board(start_board.rows);
     printf("\n");
+
+    initialize_squares(&sq_row);
     initialize_domains(&start_board, &board_domains, &sq_row);
     initialize_arcs(&arc_rules, &sq_row);
+    free_squares(&SQUARES);
 
     AC3(&board_domains, &arc_rules);
 
@@ -140,28 +142,34 @@ int main(int argc, char *argv[]) {
         printf("\n");
         return VALID;
 
+
     } else if (args.ac3 == AC3_ONLY) {
         printf("Board progress after AC3:\n");
         print_unsolved_domains(&board_domains, ROWS, ROWS_LEN, COLUMNS, COL_LEN);
         printf("\n");
         return VALID;
+
+
     } else if (args.ac3 == AC3_) {
         printf("Board progress after AC3:\n");
         print_unsolved_domains(&board_domains, ROWS, ROWS_LEN, COLUMNS, COL_LEN);
         printf("\n");
+
+    } else {
+
+        solved_domains = backtracking_search(&board_domains, &arc_rules);
+
+        if (solved_domains != NULL) {
+            printf("solved with Back Tracking Search:\n");
+            print_solved_domains(solved_domains, ROWS, ROWS_LEN, COLUMNS, COL_LEN);
+            printf("\n");
+
+            return VALID;
+        }
+
+        printf("Board given is not valid.\n");
+        return INVALID;
     }
-
-    solved_domains = backtracking_search(&board_domains, &arc_rules);
-
-    if (solved_domains != NULL) {
-        printf("solved with Back Tracking Search:\n");
-        print_solved_domains(solved_domains, ROWS, ROWS_LEN, COLUMNS, COL_LEN);
-        printf("\n");
-        return VALID;
-    }
-
-    printf("Board given is not valid.\n");
-    return INVALID;
 }
 /*================================================================================*/
 /*========================== HELPER FUNCTIONS ====================================*/
@@ -649,4 +657,17 @@ Domains *get_new_domains(Domains *board_domains, char *space, char new_value, Ar
         return new_domains;
     }
     return NULL;
+}
+
+/* ==================== FREE MEMORY FUNCTIONS ======================== */
+/* =================================================================== */
+
+void free_squares(char **squares[9][9]) {
+    int x = 0, y = 0;
+    for (; x < ROWS_LEN; x++) {
+        for (; y < COL_LEN; y++) {
+            free(*squares[x][y]);
+        }
+        y = 0;
+    }
 }
