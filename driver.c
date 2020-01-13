@@ -86,22 +86,6 @@ int main(int argc, char *argv[]) {
 
                 y = 0;
             }
-            // fgets(start_board.rows[input_index], 10, stdin);
-
-            // /* remove extra characters from stdin. */
-            // if ((fseek(stdin, 0, SEEK_END), ftell(stdin)) > 0) {
-            //     rewind(stdin);
-            //     fgets(buffer, 1024 , stdin);
-            // }
-
-            // for (; y < COL_LEN; y++) {
-            //     if (start_board.rows[input_index][y] == '\0' || start_board.rows[input_index][y] == 10) {
-            //         printf("Last entered row too short.\n");
-            //         input_index--;
-            //     }
-            // }
-
-            // y = 0;
         }
     } else if (args.input_mode == FILE_MODE) {
 
@@ -130,35 +114,10 @@ int main(int argc, char *argv[]) {
                 }
             }
 
-
         } else {
             printf("Input empty.\n");
             return INVALID;
         }
-
-            /* working on windows:
-            if ((fseek(stdin, 0, SEEK_END), ftell(stdin)) > 0){
-                rewind(stdin);
-                for (; input_index < ROWS_LEN; input_index++) {
-
-                    fgets(start_board.rows[input_index], 10, stdin);
-                    ask_again = getchar();
-                    ask_int = (int) ask_again;
-                    printf("ask again: %d\n", ask_again);
-                    printf("eval: %d\n", (ask_again != '\n' || ask_int != 13));
-                    if (input_index != 8 && (ask_again != '\n' && ask_int != 13)) {
-                        printf("One or more rows given are not of valid length.\n");
-                        return INVALID;
-                    }
-                    if (input_index == 8 && ask_again != EOF) {
-                        printf("File given to stdin too long.");
-                        return INVALID;
-                    }
-                }
-            } else {
-                printf("Input empty.\n");
-                return INVALID;
-            }*/
     }
 
     /* if write out given, have stdout go to file name given instead. */
