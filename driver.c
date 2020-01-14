@@ -132,21 +132,17 @@ int main(int argc, char *argv[]) {
     initialize_squares(&sq_row);
     initialize_domains(&start_board, &board_domains, &sq_row);
     initialize_arcs(&arc_rules, &sq_row);
-    free_squares(&SQUARES);
 
     AC3(&board_domains, &arc_rules);
 
-    if (board_is_solved(&board_domains, ROWS, ROWS_LEN, COLUMNS, COL_LEN)) {
+    if (args.ac3 == AC3_ONLY || board_is_solved(&board_domains, ROWS, ROWS_LEN, COLUMNS, COL_LEN)) {
         printf("Solved with AC3 algorithm:\n");
         print_solved_domains(&board_domains, ROWS, ROWS_LEN, COLUMNS, COL_LEN);
         printf("\n");
-        return VALID;
 
-
-    } else if (args.ac3 == AC3_ONLY) {
-        printf("Board progress after AC3:\n");
-        print_unsolved_domains(&board_domains, ROWS, ROWS_LEN, COLUMNS, COL_LEN);
-        printf("\n");
+        free_arcs(&arc_rules);
+        free_squares(SQUARES);
+        free_domain_keys(&board_domains, ROWS, ROWS_LEN, COLUMNS, COL_LEN);
         return VALID;
 
 
@@ -155,21 +151,27 @@ int main(int argc, char *argv[]) {
         print_unsolved_domains(&board_domains, ROWS, ROWS_LEN, COLUMNS, COL_LEN);
         printf("\n");
 
-    } else {
-
-        solved_domains = backtracking_search(&board_domains, &arc_rules);
-
-        if (solved_domains != NULL) {
-            printf("solved with Back Tracking Search:\n");
-            print_solved_domains(solved_domains, ROWS, ROWS_LEN, COLUMNS, COL_LEN);
-            printf("\n");
-
-            return VALID;
-        }
-
-        printf("Board given is not valid.\n");
-        return INVALID;
     }
+
+    solved_domains = backtracking_search(&board_domains, &arc_rules);
+
+    free_squares(SQUARES);
+    free_arcs(&arc_rules);
+    free_domain_keys(&board_domains, ROWS, ROWS_LEN, COLUMNS, COL_LEN);
+
+    if (solved_domains != NULL) {
+        printf("solved with Back Tracking Search:\n");
+
+        print_solved_domains(solved_domains, ROWS, ROWS_LEN, COLUMNS, COL_LEN);
+        free_domain_keys(solved_domains, ROWS, ROWS_LEN, COLUMNS, COL_LEN);
+        free(solved_domains);
+
+        printf("\n");
+        return VALID;
+    }
+
+    printf("Board given is not valid.\n");
+    return INVALID;
 }
 /*================================================================================*/
 /*========================== HELPER FUNCTIONS ====================================*/
@@ -372,7 +374,8 @@ void initialize_domains(Sudoku_Board *start_board, Domains *board_domains, Squar
     Node *domain_list;
     char start_value;
     int x = 0, y = 0, hash;
-    char *space = malloc(3 * sizeof(char));
+    char space[3];
+    space[2] = '\0';
 
     for(;x < ROWS_LEN; x++){
         for(;y < COL_LEN; y++) {
@@ -380,7 +383,6 @@ void initialize_domains(Sudoku_Board *start_board, Domains *board_domains, Squar
             /* build space string*/
             space[0] = ROWS[x];
             space[1] = COLUMNS[y];
-            space[2] = '\0';
 
             /* insert the tile into the board coordinates mapping */
             hash = hash_code(space);
@@ -423,10 +425,12 @@ void init_empty_board(Sudoku_Board *empty_board) {
 */
 void initialize_arcs(Arcs *arc_rules, Squares_Row *sq_row) {
     int x = 0, y = 0, hash, rule_index = 0, squares_row;
-    char *space = malloc(3 * sizeof(char));
+    char space[3];
     char arc_char;
     Arc_List *new_list;
     char *new_value;
+
+    space[2] = '\0';
 
     for(;x < ROWS_LEN; x++){
         for(;y < COL_LEN; y++) {
@@ -434,7 +438,6 @@ void initialize_arcs(Arcs *arc_rules, Squares_Row *sq_row) {
             /* build space string*/
             space[0] = ROWS[x];
             space[1] = COLUMNS[y];
-            space[2] = '\0';
 
             hash = hash_code(space);
 
@@ -493,11 +496,12 @@ void initialize_arcs(Arcs *arc_rules, Squares_Row *sq_row) {
 /* AC-3 is a constraint satisfaction problem (CSP) algorithim where taking in sets of rules
    about the problem, fills in the board by a process of elimination. */
 void AC3(Domains *board_domains, Arcs *arc_rules) {
-    char *space, *arc_tile;
     int x = 0, y = 0, hash;
     Queue queue;
     Arc_List *curr;
     Tile_Pair *pair;
+    char space[3];
+    space[2] = '\0';
 
     init_queue(&queue);
 
@@ -506,25 +510,22 @@ void AC3(Domains *board_domains, Arcs *arc_rules) {
         for(;y < COL_LEN; y++) {
 
             /* build space string*/
-            space = malloc(3 * sizeof(char));
             space[0] = ROWS[x];
             space[1] = COLUMNS[y];
-            space[2] = '\0';
 
             hash = hash_code(space);
 
             curr = arc_rules -> values[hash];
 
             while (curr != NULL) {
-                arc_tile = curr -> value;
 
-                append_queue(&queue, space, arc_tile);
-
+                append_queue(&queue, space, curr -> value);
                 curr = curr -> next;
             }
         }
         y = 0;
     }
+
 
     /* grab a pair out of the queue. if we can revise the board using this pair, then need to add the pair
        as well as all the pairs made from the first value and its arc rules back into the queue. */
@@ -538,13 +539,19 @@ void AC3(Domains *board_domains, Arcs *arc_rules) {
             curr = arc_rules -> values[hash];
 
             while (curr != NULL) {
+
                 append_queue(&queue, curr -> value, pair -> values[0]);
                 curr = curr -> next;
+
             }
+
         }
 
+        free(pair -> values[0]);
+        free(pair -> values[1]);
+        free(pair);
+        pair = NULL;
     }
-
 }
 
 /* revising the domain for the tiles consists of checking the domains of the the
@@ -595,7 +602,7 @@ Domains *backtracking_search(Domains *board_domains, Arcs *arc_rules) {
 
     /* if the board is solved return this board. */
     if (board_is_solved(board_domains, ROWS, ROWS_LEN, COLUMNS, COL_LEN)) {
-        return board_domains;
+        return deep_copy_domains(board_domains, ROWS, ROWS_LEN, COLUMNS, COL_LEN);
     }
 
     /* get the list of keys (tiles) from the board that are still unsolved. */
@@ -614,11 +621,29 @@ Domains *backtracking_search(Domains *board_domains, Arcs *arc_rules) {
             result = backtracking_search(new_domains, arc_rules);
 
             if (result != NULL) {
+
+                free_domain_keys(new_domains, ROWS, ROWS_LEN, COLUMNS, COL_LEN);
+                free(new_domains);
+                free_keys(unsolved_keys);
+                free(unsolved_keys);
+                free(space_w_list);
+
                 return result;
             }
+
+            free_domain_keys(new_domains, ROWS, ROWS_LEN, COLUMNS, COL_LEN);
+            free(new_domains);
+            new_domains = NULL;
         }
         curr_val = curr_val -> next;
     }
+    if (new_domains != NULL) {
+        free_domain_keys(new_domains, ROWS, ROWS_LEN, COLUMNS, COL_LEN);
+        free(new_domains);
+    }
+    free_keys(unsolved_keys);
+    free(unsolved_keys);
+    free(space_w_list);
     return NULL;
 }
 
@@ -626,9 +651,11 @@ Domains *backtracking_search(Domains *board_domains, Arcs *arc_rules) {
    domain of the space parameter to be only the new_value (effectively  this tile is "assumed solved"). */
 Domains *get_new_domains(Domains *board_domains, char *space, char new_value, Arcs *arc_rules) {
     int x = 0, y = 0, hash;
-    char *domain_key = malloc(3 * sizeof(char));
+    char domain_key[3];
     Domains *new_domains = malloc(sizeof(Domains));
     Node *new_list_for_space = malloc(sizeof(Node));
+
+    domain_key[2] = '\0';
 
     new_list_for_space -> value = new_value;
     new_list_for_space -> next = NULL;
@@ -637,7 +664,6 @@ Domains *get_new_domains(Domains *board_domains, char *space, char new_value, Ar
         for(; y < COL_LEN; y++) {
             domain_key[0] = ROWS[x];
             domain_key[1] = COLUMNS[y];
-            domain_key[2] = '\0';
 
             hash = hash_code(domain_key);
 
@@ -650,24 +676,45 @@ Domains *get_new_domains(Domains *board_domains, char *space, char new_value, Ar
         }
         y = 0;
     }
+
     /* after assuming this value, run AC3 to narrow down the domains of the other values as well. */
     AC3(new_domains, arc_rules);
 
     if (is_consistent(new_domains, ROWS, ROWS_LEN, COLUMNS, COL_LEN)) {
         return new_domains;
     }
+    free_domain_keys(new_domains, ROWS, ROWS_LEN, COLUMNS, COL_LEN);
+    free(new_domains);
     return NULL;
 }
 
 /* ==================== FREE MEMORY FUNCTIONS ======================== */
 /* =================================================================== */
 
-void free_squares(char **squares[9][9]) {
+void free_squares(char *squares[9][9]) {
     int x = 0, y = 0;
     for (; x < ROWS_LEN; x++) {
         for (; y < COL_LEN; y++) {
-            free(*squares[x][y]);
+            free(squares[x][y]);
         }
         y = 0;
     }
+}
+
+void free_arcs(Arcs *arc_rules) {
+    int x = 0, y = 0, hash;
+    char space[2] = "";
+
+    for (; x < ROWS_LEN; x++) {
+
+        for(; y < COL_LEN; y++) {
+            space[0] = ROWS[x];
+            space[1] = COLUMNS[y];
+
+            hash = hash_code(space);
+            free_arc_list(arc_rules -> values[hash]);
+        }
+        y = 0;
+    }
+
 }

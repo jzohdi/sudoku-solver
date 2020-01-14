@@ -14,7 +14,7 @@ int domain_list_len(Node *domain_list) {
 
 int board_is_solved(Domains *board_domains, const char *rows, int row_len, const char *cols, int col_len) {
     int x = 0, y = 0, is_solved = 1, hash;
-    char *space = malloc(2 * sizeof(char));
+    char space[2];
     Node *domain_list;
 
     for (; x < row_len; x++) {
@@ -38,7 +38,7 @@ int board_is_solved(Domains *board_domains, const char *rows, int row_len, const
 void print_unsolved_domains(Domains *board_domains, const char *rows, int row_len, const char *cols, int col_len) {
     int x = 0, y = 0, hash;
     char value;
-    char *space = malloc(2 * sizeof(char));
+    char space[2];
 
     for (; x < row_len; x++) {
         printf("|");
@@ -59,13 +59,12 @@ void print_unsolved_domains(Domains *board_domains, const char *rows, int row_le
         printf("\n");
         y = 0;
     }
-    free(space);
 }
 
 void print_solved_domains(Domains *board_domains, const char *rows, int row_len, const char*cols, int col_len) {
     int x = 0, y = 0, hash;
     char value;
-    char *space = malloc(2 * sizeof(char));
+    char space[2];
 
     for (; x < row_len; x++) {
         printf("|");
@@ -82,7 +81,6 @@ void print_solved_domains(Domains *board_domains, const char *rows, int row_len,
         printf("\n");
         y = 0;
     }
-    free(space);
 }
 
 void print_domain_list(Node *head) {
@@ -107,15 +105,16 @@ void print_arc_list(Arc_List *head) {
 }
 
 void print_domains(Domains *board_domains, const char *rows, int row_len, const char *cols, int col_len) {
-    char *space = malloc(3 * sizeof(char));
+    char space[3];
     int x = 0, y = 0, hash;
+
+    space[2] = '\0';
 
     for(;x < row_len; x++){
         for(;y < col_len; y++) {
 
             space[0] = rows[x];
             space[1] = cols[y];
-            space[2] = '\0';
 
             /* insert the tile into the board coordinates mapping */
             hash = hash_code(space);
@@ -133,9 +132,11 @@ void print_domains(Domains *board_domains, const char *rows, int row_len, const 
    has a domain of 0, then there is no possible value fo this space. */
 int is_consistent(Domains *board_domains, const char *rows, int row_len, const char *cols, int col_len) {
     int x = 0, y = 0, hash;
-    char *space = malloc(2 * sizeof(char));
+    char space[2];
+
     for (; x < row_len; x++) {
         for(; y < col_len; y++) {
+
             space[0] = rows[x];
             space[1] = cols[y];
 
@@ -143,13 +144,12 @@ int is_consistent(Domains *board_domains, const char *rows, int row_len, const c
 
             /* check if the size of the list is 0. */
             if(board_domains -> values[hash] == NULL) {
-                free(space);
                 return 0;
             }
         }
         y = 0;
     }
-    free(space);
+
     return 1;
 }
 /* hash_code function is simply since only needing to account for keys
@@ -257,6 +257,27 @@ Space_List_Pair *get_min_list(Domains *board_domains, char **space_options) {
     return pair;
 }
 
+Domains *deep_copy_domains(Domains *board_domains, const char *rows, int row_len, const char *cols, int col_len) {
+    int x = 0, y = 0, hash;
+    char domain_key[3];
+    Domains *new_domains = malloc(sizeof(Domains));
+
+    domain_key[2] = '\0';
+
+    for (; x < row_len; x++) {
+        for (; y < col_len; y++) {
+
+            domain_key[0] = rows[x];
+            domain_key[1] = cols[y];
+
+            hash = hash_code(domain_key);
+            new_domains -> values[hash] = deep_copy_list(board_domains -> values[hash]);
+        }
+        y = 0;
+    }
+    return new_domains;
+}
+
 /* deep copy is necessary while making a new copy of the board domains.
    Each node must be made a deep copy of since if two separate copies
    of the board domains contained the same instance of Node's, their
@@ -328,4 +349,54 @@ Node *remove_value_from_domain_list(Node *list, char val) {
     }
 
     return list;
+}
+/* free the Arc_List linked list for one value in Arcs hashmap*/
+void free_arc_list(Arc_List *head) {
+    Arc_List *temp = head;
+    while (head != NULL) {
+        head = head -> next;
+        free(temp -> value);
+        free(temp);
+        temp = head;
+    }
+}
+
+void free_keys(char ** keys) {
+    int index = 0;
+    while(keys[index] != NULL) {
+        free(keys[index]);
+        keys[index] = NULL;
+        index++;
+    }
+}
+
+void free_domain_keys(Domains *board_domains, const char *rows, int row_len, const char *cols, int col_len) {
+    int x = 0, y = 0, hash;
+    char space[2];
+    Node *key_head;
+
+    for (; x < row_len; x++) {
+        for (; y < col_len; y++) {
+            space[0] = rows[x];
+            space[1] = cols[y];
+
+            hash = hash_code(space);
+
+            key_head = board_domains -> values[hash];
+
+            free_domain_list(key_head);
+            key_head = NULL;
+            board_domains -> values[hash] = NULL;
+        }
+        y = 0;
+    }
+}
+void free_domain_list(Node *head) {
+    Node *temp = head;
+    while(head != NULL) {
+        head = head -> next;
+        free(temp);
+        temp = head;
+
+    }
 }

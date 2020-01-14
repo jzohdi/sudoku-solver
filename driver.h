@@ -72,5 +72,6 @@ int revise_domains(Domains *board_domains, char *tile1, char *tile2);
 
 /* functions to free memory. */
 void free_squares(char *squares[9][9]);
+void free_arcs(Arcs *arc_rules);
 
 #endif
