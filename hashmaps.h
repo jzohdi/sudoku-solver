@@ -18,7 +18,7 @@ typedef struct {
 /* the Squares_row will hold a mapping
 of each square (A1, A2 ... I9) row number to cache.
 This is done, since otherwise the last step of initialize_arcs
-would have to do an n^2 search for each tile in order to find the 
+would have to do an n^2 search for each tile in order to find the
 correct location inside the SQUARES rule. */
 typedef struct {
     int row[MAX_SIZE];
@@ -53,5 +53,11 @@ int board_is_solved(Domains *board_domains, const char *rows, int row_len, const
 void print_solved_domains(Domains *board_domains, const char *rows, int row_len, const char *cols, int col_len);
 void print_unsolved_domains(Domains *board_domains, const char *rows, int row_len, const char *cols, int col_len);
 Node *remove_value_from_domain_list(Node *list, char val);
+Domains *deep_copy_domains(Domains *board_domains, const char *rows, int row_len, const char *cols, int col_len);
+
+void free_arc_list(Arc_List *head);
+void free_keys(char ** keys);
+void free_domain_keys(Domains *board_domains, const char *rows, int row_len, const char *cols, int col_len);
+void free_domain_list(Node *head);
 
 #endif
