@@ -82,6 +82,8 @@ int main(int argc, char *argv[]) {
                     }
                     start_board.rows[input_index][y] = line[y];
                 }
+                free(line);
+                line = NULL;
 
                 y = 0;
             }
@@ -108,6 +110,8 @@ int main(int argc, char *argv[]) {
                         }
                         start_board.rows[input_index][y] = line[y];
                     }
+                    free(line);
+                    line = NULL;
 
                     y = 0;
                 }
@@ -302,7 +306,7 @@ void set_args(Sudoku_Board *board, char *argv[], int argc) {
             start_board rows. s*/
         if (str_equal(argv[index], "line")) {
             if (index == argc - 1 || !is_number(argv[index + 1]) || str_len(argv[index + 1]) != 81) {
-                printf("Argument proceeding line is not valid.");
+                printf("Argument proceeding line is not valid.\n");
                 exit(-1);
             }
             board -> cmd -> input_mode = LINE_MODE;
@@ -533,7 +537,7 @@ void AC3(Domains *board_domains, Arcs *arc_rules) {
 
         pair = shift_queue(&queue);
 
-        if (revise_domains(board_domains, pair -> values[0], pair -> values[1])) {
+        if (ains(board_domains, pair -> values[0], pair -> values[1])) {
 
             hash = hash_code(pair -> values[0]);
             curr = arc_rules -> values[hash];

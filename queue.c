@@ -64,11 +64,9 @@ int append_queue(Queue *queue, char *v1, char *v2) {
 Tile_Pair *shift_queue(Queue *queue) {
     Tile_Pair *return_pair;
 
-    if (queue -> size == 0) {
+    if (queue_is_empty(queue)) {
         return NULL;
     }
-
-    queue -> size--;
 
     if (queue -> size == 1) {
         return_pair = queue -> head;
@@ -82,6 +80,8 @@ Tile_Pair *shift_queue(Queue *queue) {
         return_pair -> next = NULL;
     }
 
+    queue -> size--;
+
     return return_pair;
 }
 
@@ -94,6 +94,7 @@ void init_queue(Queue *queue) {
 int queue_is_empty(Queue *queue) {
     return ((queue -> head == NULL) && (queue -> tail == NULL));
 }
+
 int queue_size(Queue *queue) {
     int size = 0;
     Tile_Pair *head = queue -> head;
