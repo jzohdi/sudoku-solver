@@ -144,9 +144,10 @@ int main(int argc, char *argv[]) {
         print_solved_domains(&board_domains, ROWS, ROWS_LEN, COLUMNS, COL_LEN);
         printf("\n");
 
-        free_arcs(&arc_rules);
         free_squares(SQUARES);
+        free_arcs(&arc_rules);
         free_domain_keys(&board_domains, ROWS, ROWS_LEN, COLUMNS, COL_LEN);
+
         return VALID;
 
 
@@ -482,7 +483,13 @@ void initialize_arcs(Arcs *arc_rules, Squares_Row *sq_row) {
 
             for(; rule_index < SQUARE_NUM; rule_index++) {
                 if(SQUARES[squares_row][rule_index][0] != space[0] || SQUARES[squares_row][rule_index][1] != space[1]) {
-                    new_list = append_arc_list(new_list, SQUARES[squares_row][rule_index]);
+                    new_value = malloc(3 * sizeof(char));
+
+                    new_value[0] = SQUARES[squares_row][rule_index][0];
+                    new_value[1] = SQUARES[squares_row][rule_index][1];
+                    new_value[2] = '\0';
+
+                    new_list = append_arc_list(new_list, new_value);
                 }
             }
             rule_index = 0;
@@ -537,7 +544,7 @@ void AC3(Domains *board_domains, Arcs *arc_rules) {
 
         pair = shift_queue(&queue);
 
-        if (ains(board_domains, pair -> values[0], pair -> values[1])) {
+        if (revise_domains(board_domains, pair -> values[0], pair -> values[1])) {
 
             hash = hash_code(pair -> values[0]);
             curr = arc_rules -> values[hash];
@@ -564,7 +571,8 @@ void AC3(Domains *board_domains, Arcs *arc_rules) {
    if the only value in the tile2 domain is 2, then we must remove this value from tile1's domain. */
 int revise_domains(Domains *board_domains, char *tile1, char *tile2) {
     int revised = 0, possible = 0, hash1;
-    Node *head1, *curr1, *curr2;
+    Node *head1, *curr1, *curr2, *prev1 = NULL, *temp = NULL;
+    char to_remove;
 
     hash1 = hash_code(tile1);
     head1 = curr1 = board_domains -> values[hash1];
@@ -581,13 +589,30 @@ int revise_domains(Domains *board_domains, char *tile1, char *tile2) {
             curr2 = curr2 -> next;
         }
 
-        if (!possible) {
+        if (!possible) { /* if (!possible) then remove curr1 value from list. */
 
-            board_domains -> values[hash1] = remove_value_from_domain_list(head1, curr1 -> value);
+            /* remove the first value. */
+            if (prev1 == NULL) {
+                temp = curr1;
+                board_domains -> values[hash1] = curr1 -> next;
+
+            /* remove value in middle. */
+            } else {
+                temp = curr1;
+                prev1 -> next = curr1 -> next;
+            }
+
+            curr1 = curr1 -> next;
+            temp -> next = NULL;
+            free(temp);
+            temp = NULL;
+
             revised = 1;
-        }
 
-        curr1 = curr1 -> next;
+        } else {
+            prev1 = curr1;
+            curr1 = curr1 -> next;
+        }
     }
 
     return revised;
