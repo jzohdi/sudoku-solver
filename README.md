@@ -14,7 +14,7 @@ Makefile
 Manual
 
 ```
-> gcc driver.c queue.c hashmaps.c -o driver.x
+> gcc sudoku.c queue.c hashmaps.c -o driver.x
 ```
 
 ## Usage

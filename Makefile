@@ -1,21 +1,21 @@
 # simple compilation:
-# gcc driver.c queue.c hashmaps.c -o driver.x
+# gcc sudoku.c queue.c hashmaps.c -o driver.x
 CC = gcc
 CFLAGS = -ansi -pedantic-errors -Wall -Werror -Wshadow -fstack-protector-all
-HDRS = driver.h queue.h hashmaps.h
+HDRS = sudoku.h queue.h hashmaps.h
 OBJS = driver.o queue.o hashmaps.o
-FLS = driver.c queue.c hashmaps.c
+FLS = sudoku.c queue.c hashmaps.c
 
 all: driver.x
 
 manual:
-	gcc driver.c queue.c hashmaps.c -o driver.x
+	gcc sudoku.c queue.c hashmaps.c -o driver.x
 
 driver.x: driver.o queue.o hashmaps.o
 	$(CC) $(OBJS) -o driver.x
 
-driver.o: driver.c driver.h hashmaps.h
-	$(CC) $(CFLAGS) -c driver.c
+driver.o: sudoku.c sudoku.h hashmaps.h
+	$(CC) $(CFLAGS) -c sudoku.c
 
 queue.o: queue.c queue.h
 	$(CC) $(CFLAGS) -c queue.c
