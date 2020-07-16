@@ -2,6 +2,8 @@
 
 Sudoku.C is a command line based program that solves Sudoku boards. The program first attemps to solve the Sudoku board first with the constrain satisfaction algorithm [AC-3](https://en.wikipedia.org/wiki/AC-3_algorithm), which uses the rules of Sudoku to fill in spaces where a single possible value is left given the other starting values. If this algorithm is not enough to complete the board, the rest will be completed with [Back Tracking Search](https://en.wikipedia.org/wiki/Backtracking) (BTS). BTS is implemented here as a recursive depth-first search.
 
+![Terminal Preview](/images/terminal.png)
+
 ## Compilation
 
 Makefile
@@ -14,7 +16,7 @@ Makefile
 Manual
 
 ```
-> gcc sudoku.c queue.c hashmaps.c -o driver.x
+> gcc sudoku.c queue.c hashmaps.c -o sudoku.x
 ```
 
 ## Usage
@@ -22,13 +24,13 @@ Manual
 For all options
 
 ```
-> driver.x help
+$ ./sudoku.x help
 ```
 
 Running
 
 ```
-> driver.x file < inputfile.txt
+$ ./sudoku.x file < inputfile.txt
 ```
 
 ```
@@ -45,7 +47,7 @@ Row 9: 080060009
 ```
 
 ```
-> driver.x line 000000000302540000050301070000000004409006005023054790000000050700810000080060009
+$ ./sudoku.x line 000000000302540000050301070000000004409006005023054790000000050700810000080060009
 ```
 
 Output
@@ -62,6 +64,13 @@ solved with Back Tracking Search:
 |7|3|5|8|1|9|6|4|2|
 |2|8|4|7|6|5|1|3|9|
 ```
+
+## Roadmap
+In the future I would like to turn this into a fully functional sudoku game in the command line and use the solving algorithm for creating games, hints, checking, and solutions.
+
+I would also like to explore optimizing the alogorithm in terms of the L1 cache. If I can take away linked-list implementations where ever possible and replace them with array implementations, I think that the list operation downsides will be over gained by the cache benefits.
+
+Creating a game would consist of initializing an empty board with a random value from 1-9 on a random square, solving this board, and then taking away a certain number of random squares to leave the rest for the user to solve.
 
 ## Contributing
 

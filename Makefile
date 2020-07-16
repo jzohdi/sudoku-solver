@@ -3,18 +3,18 @@
 CC = gcc
 CFLAGS = -ansi -pedantic-errors -Wall -Werror -Wshadow -fstack-protector-all
 HDRS = sudoku.h queue.h hashmaps.h
-OBJS = driver.o queue.o hashmaps.o
+OBJS = sudoku.o queue.o hashmaps.o
 FLS = sudoku.c queue.c hashmaps.c
 
-all: driver.x
+all: sudoku.x
 
 manual:
-	gcc sudoku.c queue.c hashmaps.c -o driver.x
+	gcc sudoku.c queue.c hashmaps.c -o sudoku.x
 
-driver.x: driver.o queue.o hashmaps.o
-	$(CC) $(OBJS) -o driver.x
+sudoku.x: sudoku.o queue.o hashmaps.o
+	$(CC) $(OBJS) -o sudoku.x
 
-driver.o: sudoku.c sudoku.h hashmaps.h
+sudoku.o: sudoku.c sudoku.h hashmaps.h
 	$(CC) $(CFLAGS) -c sudoku.c
 
 queue.o: queue.c queue.h
