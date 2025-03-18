@@ -206,7 +206,7 @@ int main(int argc, char *argv[])
 /*========================== HELPER FUNCTIONS ====================================*/
 /*================================================================================*/
 
-void print_commands()
+void print_commands(void)
 {
     char *example_board[] = {"\t  000260701\n", "\t  680070090\n", "\t  ...\n"};
     char *cmd1[] = {"\thelp", ":", " list commands.\n"};

@@ -39,19 +39,21 @@ const char COLUMNS[] = {'1', '2', '3', '4', '5', '6', '7', '8', '9', '\0'};
    |G1|G2|G3|H1|H2|H3|I1|I2|I3|, |G4|G5|G6|H4|H5|H6|I4|I5|I6|, |G7|G8|G9|H7|H8|H9|I7|I8|I9|  */
 char *SQUARES[9][9];
 
-typedef struct {
+typedef struct
+{
     int ac3;
     int input_mode;
     int write_out;
     char *file_name;
 } Command_Line_Args;
 
-typedef struct board {
+typedef struct board
+{
     Command_Line_Args *cmd;
     char rows[9][9];
 } Sudoku_Board;
 
-void print_commands();
+void print_commands(void);
 void print_board(char rows[9][9]);
 void set_args(Sudoku_Board *board, char *argv[], int argc);
 int str_contains_char(char s[], char c);

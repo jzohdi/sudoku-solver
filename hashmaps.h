@@ -4,36 +4,41 @@
 
 #define MAX_SIZE 473
 
-typedef struct node {
+typedef struct node
+{
     char value;
     struct node *next;
 } Node;
 
-typedef struct {
+typedef struct
+{
     int size;
     Node *values[MAX_SIZE];
 } Domains;
-
 
 /* the Squares_row will hold a mapping
 of each square (A1, A2 ... I9) row number to cache.
 This is done, since otherwise the last step of initialize_arcs
 would have to do an n^2 search for each tile in order to find the
 correct location inside the SQUARES rule. */
-typedef struct {
+typedef struct
+{
     int row[MAX_SIZE];
 } Squares_Row;
 
-typedef struct arc_ele {
+typedef struct arc_ele
+{
     char *value;
     struct arc_ele *next;
 } Arc_List;
 
-typedef struct {
+typedef struct
+{
     Arc_List *values[MAX_SIZE];
 } Arcs;
 
-typedef struct {
+typedef struct
+{
     char *space;
     Node *domain_list;
 } Space_List_Pair;
@@ -56,7 +61,7 @@ Node *remove_value_from_domain_list(Node *list, char val);
 Domains *deep_copy_domains(Domains *board_domains, const char *rows, int row_len, const char *cols, int col_len);
 
 void free_arc_list(Arc_List *head);
-void free_keys(char ** keys);
+void free_keys(char **keys);
 void free_domain_keys(Domains *board_domains, const char *rows, int row_len, const char *cols, int col_len);
 void free_domain_list(Node *head);
 

@@ -79,3 +79,9 @@ Pull requests are welcome. For major changes, please open an issue first to disc
 ## License
 
 [MIT](https://choosealicense.com/licenses/mit/)
+
+## Compiling to WASM
+
+```shell
+emcc sudoku.c queue.c hashmaps.c -O2 -s WASM=1 -s EXPORTED_FUNCTIONS="['_main']" -o sudoku.js
+```
