@@ -6,6 +6,30 @@
 #include "sudoku.h"
 #include "queue.h"
 
+void solved_domains_to_s(Domains *board_domains, char* line)
+{
+    int x = 0, y = 0, hash;
+    char value;
+    char space[2];
+
+    for (; x < ROWS_LEN; x++)
+    {
+        for (; y < COL_LEN; y++)
+        {
+
+            space[0] = ROWS[x];
+            space[1] = COLUMNS[y];
+
+            hash = hash_code(space);
+
+            value = board_domains->values[hash]->value;
+            line[(ROWS_LEN * x) + y] = value;
+        }
+        y = 0;
+    }
+}
+
+
 void line_to_board(Sudoku_Board *board, char* line) {
     int y = 0;
     int x = 0;
@@ -28,7 +52,7 @@ void line_to_board(Sudoku_Board *board, char* line) {
     }
 }
 
-int solve(char *line)
+char* solve(char *line)
 {
     Squares_Row sq_row;
     Sudoku_Board start_board;
@@ -54,17 +78,16 @@ int solve(char *line)
     if (solved_domains != NULL)
     {
         printf("solved with Back Tracking Search:\n");
-
-        print_solved_domains(solved_domains, ROWS, ROWS_LEN, COLUMNS, COL_LEN);
+        solved_domains_to_s(solved_domains, line);
         free_domain_keys(solved_domains, ROWS, ROWS_LEN, COLUMNS, COL_LEN);
         free(solved_domains);
 
         printf("\n");
-        return VALID;
+        return line;
     }
 
     printf("Board given is not valid.\n");
-    return INVALID;
+    return line;
 
 }
 
