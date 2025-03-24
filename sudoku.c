@@ -6,6 +6,68 @@
 #include "sudoku.h"
 #include "queue.h"
 
+void line_to_board(Sudoku_Board *board, char* line) {
+    int y = 0;
+    int x = 0;
+    if (!is_number(line) || str_len(line) != 81)
+    {
+        printf("Argument proceeding line is not valid.\n");
+        exit(-1);
+    }
+    
+    board->cmd->input_mode = LINE_MODE;
+    /* parse the next arg into board rows. */
+    
+    for (; x < ROWS_LEN; x++)
+    {
+        for (; y < COL_LEN; y++)
+        {
+            board->rows[x][y] = line[(9 * x) + y];
+        }
+        y = 0;
+    }
+}
+
+int solve(char *line)
+{
+    Squares_Row sq_row;
+    Sudoku_Board start_board;
+    Domains board_domains;
+    Domains *solved_domains;
+    Arcs arc_rules;
+    int file_desc;
+
+    init_empty_board(&start_board); 
+    line_to_board(&start_board, line);  
+    initialize_squares(&sq_row);
+    initialize_domains(&start_board, &board_domains, &sq_row);
+    initialize_arcs(&arc_rules, &sq_row);
+
+    AC3(&board_domains, &arc_rules);
+
+    solved_domains = backtracking_search(&board_domains, &arc_rules);
+
+    free_squares(SQUARES);
+    free_arcs(&arc_rules);
+    free_domain_keys(&board_domains, ROWS, ROWS_LEN, COLUMNS, COL_LEN);
+
+    if (solved_domains != NULL)
+    {
+        printf("solved with Back Tracking Search:\n");
+
+        print_solved_domains(solved_domains, ROWS, ROWS_LEN, COLUMNS, COL_LEN);
+        free_domain_keys(solved_domains, ROWS, ROWS_LEN, COLUMNS, COL_LEN);
+        free(solved_domains);
+
+        printf("\n");
+        return VALID;
+    }
+
+    printf("Board given is not valid.\n");
+    return INVALID;
+
+}
+
 int main(int argc, char *argv[])
 {
     /* used to clear extra terminal input. */

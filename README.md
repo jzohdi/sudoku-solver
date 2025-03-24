@@ -85,3 +85,6 @@ Pull requests are welcome. For major changes, please open an issue first to disc
 ```shell
 emcc sudoku.c queue.c hashmaps.c -O2 -s WASM=1 -s EXPORTED_FUNCTIONS="['_main']" -o sudoku.js
 ```
+```shell
+emcc sudoku.c queue.c hashmaps.c -O2 -s WASM=1 -s EXPORTED_FUNCTIONS="['_solve']" -o sudoku.js -s EXPORTED_RUNTIME_METHODS=ccall,cwrap
+```
